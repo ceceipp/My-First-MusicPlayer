@@ -15,12 +15,11 @@ import java.util.List;
 
 public class SpinnerForFgList_Adapter  extends BaseAdapter {
     private List<String> titles;
-    private List<SameStringIdList> sameStringIdList;
+    private List<List<SameStringIdList>> sameStringIdListssss;
     private Context context;
 
-    public SpinnerForFgList_Adapter(Context context,List<String> titles, List<SameStringIdList> sameStringIdList){
+    public SpinnerForFgList_Adapter(Context context,List<String> titles){
         this.titles = titles;
-        this.sameStringIdList = sameStringIdList;
         this.context = context;
     }
     @Override
@@ -41,13 +40,11 @@ public class SpinnerForFgList_Adapter  extends BaseAdapter {
             convertView = inflater.inflate(R.layout.spinnerforfglist_layout,null);
             holder = new ViewHolder();
             holder.sameString = convertView.findViewById(R.id.spinnerForFgList_sameString);
-            holder.singleCount = convertView.findViewById(R.id.spinnerForFgList_singleCount);
             convertView.setTag(holder);
         }
         else
             holder =(ViewHolder) convertView.getTag();
         holder.sameString.setText(titles.get(position));
-        holder.singleCount.setText(" "+sameStringIdList.size());
         return convertView;
     }
 
@@ -57,6 +54,5 @@ public class SpinnerForFgList_Adapter  extends BaseAdapter {
     }
     static class ViewHolder{
         TextView sameString;
-        TextView singleCount;
     }
 }

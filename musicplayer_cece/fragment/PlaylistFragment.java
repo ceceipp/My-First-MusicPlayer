@@ -3,6 +3,7 @@ package com.lc.musicplayer.fragment;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
@@ -50,7 +51,6 @@ public class PlaylistFragment  extends Fragment {
         super.onAttach(context);
         mActivity = (FragmentActivity) context;
         oriSongList=mActivity.getOriSongList();
-        Log.d("Ser1212","onAttach");
 //        if (oriSongList==null)
 //            oriSongList=(List<Song>) Saver.readSongList("firstList");
     }
@@ -63,14 +63,23 @@ public class PlaylistFragment  extends Fragment {
             oriSongList=(List<Song>) Saver.readSongList("firstList");
         initData();
         view = inflater.inflate(R.layout.playlist_layout, container, false);
+        listView = view.findViewById(R.id.playlist);
+
         initFragment();
         initOnClick();
+        //正常加载Fg时:
+        // (Act)onCreate:   --->>>>(Act) onServiceConnected: ---->>>(Fg)onActivityCreated:
         //这里为什么不能用呢, 转屏的时候, onCreateView比 fgAct的onCreate更早执行(或者同步),
         // 而fgAct的fragment配置是放在handler里面的...
+        //转屏时:
+        //(Act)onCreate:  ---->>>(Fg)onActivityCreated: --->>>>(Act) onServiceConnected:
         mActivity.setTitleLists(Data.SamePlaylist, "Playlist:  "+playlists.size());
-        Log.d("Ser1212","onCreateView");
-
         return view;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
     }
 
     @Override
@@ -118,7 +127,6 @@ public class PlaylistFragment  extends Fragment {
         }
     }
     private void initFragment(){
-        listView = view.findViewById(R.id.playlist);
         listAdapter_fragment=
                 new ListAdapter_Fragment(MyApplication.getContext()
                         ,playlists, oriSongList,Data.SamePlaylist, R.layout.same_string_item);

@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory;
 import android.widget.Toast;
 
 import com.lc.musicplayer.MyApplication;
+import com.lc.musicplayer.test.TestFg;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -85,5 +86,54 @@ public class Saver {
             Toast.makeText(MyApplication.getContext(),"Err at readSongList",Toast.LENGTH_SHORT).show();
         }
         return null;
+    }
+
+    public static void saveData(String fileName, Object object,  boolean isAppend){
+        final String Local_Cache_Path =
+                MyApplication.getContext().getExternalFilesDir(null).toString() + "ceceData";
+        File dir = new File(Local_Cache_Path);
+        File singleFile = new File(Local_Cache_Path+"/"+fileName);
+        if (!dir.exists() || !dir.isDirectory())
+            dir.mkdirs();
+        if(singleFile.exists()){
+            try {
+                File objectFile = new File(dir, fileName);
+                ObjectOutputStream oos =new ObjectOutputStream(new FileOutputStream(objectFile,isAppend));
+                oos.writeObject(object);
+                oos.close();//byte[] bytes = new Byte(songList);
+            }catch (Exception e){ e.printStackTrace(); }
+        }
+        else {
+            try {
+                File objectFile = new File(dir, fileName);
+                ObjectOutputStream oos =new ObjectOutputStream(new FileOutputStream(objectFile));
+                oos.writeObject(object);
+                oos.close();//byte[] bytes = new Byte(songList);
+            }catch (Exception e){ e.printStackTrace(); }
+        }
+    }
+
+    public static Object readData(String songListFileName){
+        final String Local_Cache_Path =
+                MyApplication.getContext().getExternalFilesDir(null).toString() + "ceceData";
+        try {
+            File objectFile = new File(Local_Cache_Path, songListFileName);
+            if (objectFile.exists()){
+                ObjectInputStream oip = new ObjectInputStream(new FileInputStream(objectFile));
+                Object object = oip.readObject();
+                oip.close();
+                return object;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            Toast.makeText(MyApplication.getContext(),"No This Data",Toast.LENGTH_SHORT).show();
+        }
+        return null;
+    }
+    public static void saveAllSameStringList(List<Song> songList){
+        Saver.saveData("playlist",Player.initDefaultPlaylist(songList, null),false);
+        Saver.saveData("albumList", Player.idToSameAlbumConvert(songList), false);
+        Saver.saveData("singerList", Player.idToSameSingerConvert(songList),false);
+        Saver.saveData("pathList", Player.idToSamePathConvert(songList),false);
     }
 }

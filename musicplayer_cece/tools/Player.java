@@ -220,12 +220,18 @@ public  class   Player {
         if (order_Mode==Data.Order_Shuffle_Playlist){
              usingPositionList = getRandomList(usingPositionList.size(),oriUsingPositionList);
             //usingPosition=usingPositionList.indexOf(usingPosition)  ;
-            usingPosition = usingPositionList.indexOf(getUsingPositionId());
+            if (usingPositionList.indexOf(getUsingPositionId())>=0)
+                usingPosition = usingPositionList.indexOf(getUsingPositionId());
+            else
+                usingPosition = 0;
         }
         if (order_Mode!=Data.Order_Shuffle_Playlist && order_Mode!=Data.Order_Random){
             //usingPosition=getUsingPositionId()  ;
             usingPositionList = oriUsingPositionList;
-            usingPosition=usingPositionList.indexOf(getUsingPositionId());
+            if (usingPositionList.indexOf(getUsingPositionId())>=0)
+                usingPosition=usingPositionList.indexOf(getUsingPositionId());
+            else
+                usingPosition = 0;
         }
         musicInfoNeedUpdate=true;
     }
@@ -276,7 +282,7 @@ public  class   Player {
         if (usingPosition<0) {
             this.usingPosition = usingPositionList.size() - 1;
             Toast.makeText(MyApplication.getContext(),
-                    "No this song at playlist queue. ",Toast.LENGTH_SHORT).show();
+                    "No this song at playlist queue. <0 ",Toast.LENGTH_SHORT).show();
         }
         else{
             if ( usingPositionList.contains(usingPosition) )
@@ -284,7 +290,7 @@ public  class   Player {
             else {
                 this.usingPosition = usingPositionList.size() - 1;
                 Toast.makeText(MyApplication.getContext(),
-                        "No this song at playlist queue. ",Toast.LENGTH_SHORT).show();
+                        "No this song at playlist queue. >0",Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -736,6 +742,28 @@ public  class   Player {
             }
         }).start();
     }
+    public static List<SameStringIdList> initDefaultPlaylist(List<Song> oriSongList,List<SameStringIdList> playlists ){
+        if (playlists==null)
+            playlists=new ArrayList<>();
+        playlists.add(new SameStringIdList("Pendulum"));
+        playlists.add(new SameStringIdList("Nightwish"));
+        playlists.add(new SameStringIdList("The Ting Tings"));
+        playlists.add(new SameStringIdList("Ellie Goulding"));
+        playlists.add(new SameStringIdList("All Item"));
+        for (int i = 0;i<oriSongList.size();i++) {
+            if (oriSongList.get(i).getSinger().contains("Pendulum"))
+                playlists.get(0).getList().add(i);
+            else if (oriSongList.get(i).getSinger().contains("Nightwish"))
+                playlists.get(1).getList().add(i);
+            else if (oriSongList.get(i).getSinger().contains("The Ting Tings"))
+                playlists.get(2).getList().add(i);
+            else if (oriSongList.get(i).getSinger().contains("Ellie Goulding"))
+                playlists.get(3).getList().add(i);
+            playlists.get(4).getList().add(i);
+        }
+        return playlists;
+    }
+
 }
 
 /***

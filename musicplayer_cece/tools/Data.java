@@ -30,6 +30,7 @@ public final class Data {
     public static final int SameSingerList=2;
     public static final int SamePathList =3;
     public static final int SameStringSingleList =4;
+    public static final int SameStringSingleListEdit =5 ;
     public static final int MainFragmentActivity=0;
     public static final int MainActivity=1;
     public static final int PlayerActivity=2;

@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -90,7 +91,7 @@ public class SameStringSongsFragment_Adapter extends BaseAdapter  {
             @Override
             public void onCreateContextMenu(ContextMenu menu, View v,
                                             ContextMenu.ContextMenuInfo menuInfo) {
-                menu.setHeaderTitle(position+" 选择你的操作");
+                menu.setHeaderTitle(position+oriList.get(sameStringSingleList.get(position)).getSong()+" 选择你的操作");
                 menu.add(0, 0, 0, "Add to playback queue");
                 menu.add(0, 1, 0, "加入喜爱的歌单");
             }

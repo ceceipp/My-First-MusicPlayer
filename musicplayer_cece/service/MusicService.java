@@ -12,6 +12,7 @@ import android.util.Log;
 
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
+import com.lc.musicplayer.fragment.SameStringSongsFragment;
 import com.lc.musicplayer.tools.AudioUtils;
 import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.Saver;
@@ -21,8 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public  class  MusicService extends Service {
-    public static List<Song> songList ;
-    private static   Player player ;
+    public static List<Song> songList;
+            //=(List<Song>) Saver.readSongList("firstList");
+    private static   Player player;
             //= new Player(songList);
     public MyBinder myBinder = new MyBinder();
     public int clickSongPosition;
@@ -71,7 +73,7 @@ public  class  MusicService extends Service {
         public void newInstancePlayer(List<Song> songListFromActivity){
             if (player==null){
             player= new Player(songListFromActivity);
-            player.setUsingPositionId(player.getUsingPositionList().size()-1);
+            player.firstClickListItem(player.getUsingPositionList().size()-10);
             player.stop();
             }
         }

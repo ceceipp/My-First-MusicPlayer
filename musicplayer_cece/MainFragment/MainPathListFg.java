@@ -3,7 +3,6 @@ package com.lc.musicplayer.MainFragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,7 +22,7 @@ import com.lc.musicplayer.tools.Song;
 import java.io.Serializable;
 import java.util.List;
 
-public class MainPathListFg  extends Fragment {
+public class MainPathListFg  extends Fragment{
     private List<Song> oriSongList ;
     private List<SameStringIdList> pathList ;
     private ListAdapter_Fragment listAdapter_fragment;
@@ -32,23 +31,28 @@ public class MainPathListFg  extends Fragment {
     private FragmentActivity mActivity;
     private List<Integer> singleList;
     private int testInt=0;
+    private FgSendDataToAct myFg;
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        myFg = (FgSendDataToAct)context;
+        oriSongList = (List<Song>) Saver.readSongList("firstList");
+        pathList =(List<SameStringIdList>) Saver.readData("pathList");
+    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         view = inflater.inflate(R.layout.pathlist_layout, container, false);
         initListView();
+        initOnClick();
         return view;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            this.oriSongList = (List<Song>) getArguments().getSerializable("oriSongList");
-            this.pathList = (List<SameStringIdList>) getArguments().getSerializable("pathList");
-        }
     }
-
     @Override
     public void onSaveInstanceState (Bundle outState){
         super.onSaveInstanceState(outState);
@@ -62,37 +66,18 @@ public class MainPathListFg  extends Fragment {
         super.onDestroy();
     }
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-    }
-    @Override
     public void onDetach() {
         super.onDetach();
     }
 
     public MainPathListFg(){}
-    public static MainPathListFg newInstance(List<Song> oriSongList , List<SameStringIdList> pathList ) {
+    public static MainPathListFg newInstance(  ) {
         MainPathListFg mainPathListFg = new MainPathListFg();
-        if (oriSongList==null)
-            oriSongList= (List<Song>) Saver.readSongList("firstList");
-        if (pathList==null)
-            pathList = initDefaultPathList(oriSongList, pathList);
-        Bundle args = new Bundle();
-        args.putSerializable("oriSongList",(Serializable) oriSongList);
-        args.putSerializable("pathList",(Serializable) pathList);
-        mainPathListFg.setArguments(args);
         return mainPathListFg;
-    }
-
-    public static List<SameStringIdList> initDefaultPathList(List<Song> oriSongList,List<SameStringIdList> pathList ){
-        if (pathList==null)
-            pathList=Player.idToSamePathConvert(oriSongList);
-        return pathList;
     }
 
     private void initListView(){
         listView = view.findViewById(R.id.pathList);
-
         listAdapter_fragment=
                 new ListAdapter_Fragment(MyApplication.getContext()
                         ,pathList, oriSongList,Data.SamePathList, R.layout.same_string_item);
@@ -102,11 +87,10 @@ public class MainPathListFg  extends Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                ViewPager viewPager = getActivity().findViewById(R.id.listViewPager);
-//                mActivity.setSingleListPosition(position);
-//                mActivity.setSingleList(  Player.sameStringListToList(pathList.get(position))  );
-//                mActivity.setLastPage(Data.SamePlaylist);
-//                viewPager.setCurrentItem(4,false);
+                singleList = Player.sameStringListToList(pathList.get(position));
+                myFg.sendSingleList(singleList);
+                myFg.sendSameString("相同目录: "+pathList.get(position).getString(),singleList.size());
+               //( (MainFragmentActivity) getActivity()).showSingleListFg(singleList);
             }
         });
     }

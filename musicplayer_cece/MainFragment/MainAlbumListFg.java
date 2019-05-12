@@ -2,8 +2,8 @@ package com.lc.musicplayer.MainFragment;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +21,6 @@ import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MainAlbumListFg extends Fragment {
@@ -33,21 +32,30 @@ public class MainAlbumListFg extends Fragment {
     private FragmentActivity mActivity;
     private List<Integer> singleList;
     private int testInt=0;
+    private FgSendDataToAct myFg;
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        myFg = (FgSendDataToAct)context;
+        oriSongList = (List<Song>) Saver.readSongList("firstList");
+        albumList =(List<SameStringIdList>) Saver.readData("albumList");
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         view = inflater.inflate(R.layout.albumlist_layout, container, false);
         initListView();
+        initOnClick();
         return view;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            this.oriSongList = (List<Song>) getArguments().getSerializable("oriSongList");
-            this.albumList = (List<SameStringIdList>) getArguments().getSerializable("albumList");
-        }
+//        if (getArguments() != null) {
+//            this.oriSongList = (List<Song>) getArguments().getSerializable("oriSongList");
+//            this.albumList = (List<SameStringIdList>) getArguments().getSerializable("albumList");
+//        }
     }
 
     @Override
@@ -63,32 +71,22 @@ public class MainAlbumListFg extends Fragment {
         super.onDestroy();
     }
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-    }
-    @Override
     public void onDetach() {
         super.onDetach();
     }
 
     public MainAlbumListFg(){}
-    public static MainAlbumListFg newInstance(List<Song> oriSongList , List<SameStringIdList> albumList ) {
+    public static MainAlbumListFg newInstance( ) {
         MainAlbumListFg mainAlbumListFg = new MainAlbumListFg();
-        if (oriSongList==null)
-            oriSongList= (List<Song>) Saver.readSongList("firstList");
-        if (albumList==null)
-            albumList = initDefaultAlbumList(oriSongList, albumList);
-        Bundle args = new Bundle();
-        args.putSerializable("oriSongList",(Serializable) oriSongList);
-        args.putSerializable("albumList",(Serializable) albumList);
-        mainAlbumListFg.setArguments(args);
+//        if (oriSongList==null)
+//            oriSongList= (List<Song>) Saver.readSongList("firstList");
+//        if (albumList==null)
+//            albumList = initDefaultAlbumList(oriSongList, albumList);
+//        Bundle args = new Bundle();
+//        args.putSerializable("oriSongList",(Serializable) oriSongList);
+//        args.putSerializable("albumList",(Serializable) albumList);
+//        mainAlbumListFg.setArguments(args);
         return mainAlbumListFg;
-    }
-
-    public static List<SameStringIdList> initDefaultAlbumList(List<Song> oriSongList,List<SameStringIdList> albumList ){
-        if (albumList==null)
-            albumList=Player.idToSameAlbumConvert(oriSongList);
-        return albumList;
     }
 
     private void initListView(){
@@ -98,15 +96,20 @@ public class MainAlbumListFg extends Fragment {
                         ,albumList, oriSongList,Data.SameAlbumList, R.layout.same_string_item);
         listView.setAdapter(listAdapter_fragment);
     }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+    }
+
     private void initOnClick(){
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                ViewPager viewPager = getActivity().findViewById(R.id.listViewPager);
-//                mActivity.setSingleListPosition(position);
-//                mActivity.setSingleList(  Player.sameStringListToList(albumList.get(position))  );
-//                mActivity.setLastPage(Data.SamePlaylist);
-//                viewPager.setCurrentItem(4,false);
+                singleList = Player.sameStringListToList(albumList.get(position));
+                myFg.sendSameString("专辑: "+albumList.get(position).getString(), singleList.size());
+                myFg.sendSingleList(singleList);
+                //( (MainFragmentActivity) getActivity()).showSingleListFg(singleList);
             }
         });
     }

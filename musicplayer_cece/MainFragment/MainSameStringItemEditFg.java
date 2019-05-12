@@ -94,7 +94,6 @@ public class MainSameStringItemEditFg extends Fragment {
 
     private void initListView(){
         listView = view.findViewById(R.id.sameStringSongs);
-        singleList =Player.sameStringListToList(Player.idToSameAlbumConvert(oriSongList),0);
         sAdapter= new SameStringSongsFragment_Edit_Adapter(MyApplication.getContext()
                 ,singleList, oriSongList,Data.SameStringSingleList, R.layout.samestringsongs_item_edit_layout);
         listView.setAdapter(sAdapter);

@@ -10,7 +10,6 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.lc.musicplayer.FragmentActivity;
-import com.lc.musicplayer.MainFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
 import com.lc.musicplayer.tools.Data;
@@ -32,6 +31,15 @@ public class MainSingerListFg extends Fragment {
     private FragmentActivity mActivity;
     private List<Integer> singleList;
     private int testInt=0;
+    private FgSendDataToAct myFg;
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        myFg = (FgSendDataToAct)context;
+        oriSongList = (List<Song>) Saver.readSongList("firstList");
+        singerList =(List<SameStringIdList>) Saver.readData("singerList");
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
@@ -44,12 +52,7 @@ public class MainSingerListFg extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            this.oriSongList = (List<Song>) getArguments().getSerializable("oriSongList");
-            this.singerList = (List<SameStringIdList>) getArguments().getSerializable("singerList");
-        }
     }
-
     @Override
     public void onSaveInstanceState (Bundle outState){
         super.onSaveInstanceState(outState);
@@ -63,32 +66,14 @@ public class MainSingerListFg extends Fragment {
         super.onDestroy();
     }
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-    }
-    @Override
     public void onDetach() {
         super.onDetach();
     }
 
     public MainSingerListFg(){}
-    public static MainSingerListFg newInstance(List<Song> oriSongList , List<SameStringIdList> singerList ) {
+    public static MainSingerListFg newInstance( ) {
         MainSingerListFg mainSingerListFg = new MainSingerListFg();
-        if (oriSongList==null)
-            oriSongList= (List<Song>) Saver.readSongList("firstList");
-        if (singerList==null)
-            singerList = initDefaultsSingerList(oriSongList, singerList);
-        Bundle args = new Bundle();
-        args.putSerializable("oriSongList",(Serializable) oriSongList);
-        args.putSerializable("singerList",(Serializable) singerList);
-        mainSingerListFg.setArguments(args);
         return mainSingerListFg;
-    }
-
-    public static List<SameStringIdList> initDefaultsSingerList(List<Song> oriSongList,List<SameStringIdList> singerList ){
-        if (singerList==null)
-            singerList=Player.idToSameSingerConvert(oriSongList);
-        return singerList;
     }
 
     private void initListView(){
@@ -102,8 +87,11 @@ public class MainSingerListFg extends Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
                 singleList = Player.sameStringListToList(singerList.get(position));
-                ( (MainFragmentActivity) getActivity()).showSingleListFg(singleList);
+                myFg.sendSameString("歌手: "+ singerList.get(position).getString(),singleList.size());
+                myFg.sendSingleList(singleList);
+                //( (MainFragmentActivity) getActivity()).showSingleListFg(singleList);
             }
         });
     }

@@ -2,17 +2,14 @@ package com.lc.musicplayer.MainFragment;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.lc.musicplayer.FragmentActivity;
-import com.lc.musicplayer.MainFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
 import com.lc.musicplayer.tools.Data;
@@ -34,6 +31,16 @@ public class MainPlaylistFg extends Fragment{
     private ListView listView;
     private List<Integer> singleList;
     private int testInt=0;
+    private FgSendDataToAct myFg;
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        myFg = (FgSendDataToAct)context;
+        oriSongList = (List<Song>) Saver.readSongList("firstList");
+        playlist =(List<SameStringIdList>) Saver.readData("playlist");
+    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
@@ -44,12 +51,13 @@ public class MainPlaylistFg extends Fragment{
     }
 
     @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            this.oriSongList = (List<Song>) getArguments().getSerializable("oriSongList");
-            this.playlist = (List<SameStringIdList>) getArguments().getSerializable("playlist");
-        }
     }
 
     @Override
@@ -64,71 +72,26 @@ public class MainPlaylistFg extends Fragment{
     public void onDestroy(){
         super.onDestroy();
     }
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-    }
+
     @Override
     public void onDetach() {
         super.onDetach();
     }
 
     public MainPlaylistFg(){}
-    public static MainPlaylistFg newInstance(List<Song> oriSongList , List<SameStringIdList> playlist ) {
+    public static MainPlaylistFg newInstance() {
         MainPlaylistFg mpFg = new MainPlaylistFg();
-        if (oriSongList==null)
-            oriSongList= (List<Song>) Saver.readSongList("firstList");
-        if (playlist==null)
-            playlist = initDefaultPlaylist(oriSongList, playlist);
-        Bundle args = new Bundle();
-        args.putSerializable("oriSongList",(Serializable) oriSongList);
-        args.putSerializable("playlist",(Serializable) playlist);
-        mpFg.setArguments(args);
+//        if (oriSongList==null)
+//            oriSongList= (List<Song>) Saver.readSongList("firstList");
+//        if (playlist==null)
+//            playlist = initDefaultPlaylist(oriSongList, playlist);
+//        Bundle args = new Bundle();
+//        args.putSerializable("oriSongList",(Serializable) oriSongList);
+//        args.putSerializable("playlist",(Serializable) playlist);
+//        mpFg.setArguments(args);
         return mpFg;
     }
-    private void initData(){
-        playlist=new ArrayList<>();
-        //其实下面这句用法不够好, 因为这句应该用在onAttach中 , 这样用其实算内存泄露....
-        //只不过误打误撞中了
-        //oriSongList=mActivity.getOriSongList(0);
-        playlist.add(new SameStringIdList("Pendulum"));
-        playlist.add(new SameStringIdList("Nightwish"));
-        playlist.add(new SameStringIdList("The Ting Tings"));
-        playlist.add(new SameStringIdList("Ellie Goulding"));
-        playlist.add(new SameStringIdList("All Item"));
-        for (int i = 0;i<oriSongList.size();i++) {
-            if (oriSongList.get(i).getSinger().contains("Pendulum"))
-                playlist.get(0).getList().add(i);
-            else if (oriSongList.get(i).getSinger().contains("Nightwish"))
-                playlist.get(1).getList().add(i);
-            else if (oriSongList.get(i).getSinger().contains("The Ting Tings"))
-                playlist.get(2).getList().add(i);
-            else if (oriSongList.get(i).getSinger().contains("Ellie Goulding"))
-                playlist.get(3).getList().add(i);
-            playlist.get(4).getList().add(i);
-        }
-    }
-    public static List<SameStringIdList> initDefaultPlaylist(List<Song> oriSongList,List<SameStringIdList> playlists ){
-        if (playlists==null)
-            playlists=new ArrayList<>();
-        playlists.add(new SameStringIdList("Pendulum"));
-        playlists.add(new SameStringIdList("Nightwish"));
-        playlists.add(new SameStringIdList("The Ting Tings"));
-        playlists.add(new SameStringIdList("Ellie Goulding"));
-        playlists.add(new SameStringIdList("All Item"));
-        for (int i = 0;i<oriSongList.size();i++) {
-            if (oriSongList.get(i).getSinger().contains("Pendulum"))
-                playlists.get(0).getList().add(i);
-            else if (oriSongList.get(i).getSinger().contains("Nightwish"))
-                playlists.get(1).getList().add(i);
-            else if (oriSongList.get(i).getSinger().contains("The Ting Tings"))
-                playlists.get(2).getList().add(i);
-            else if (oriSongList.get(i).getSinger().contains("Ellie Goulding"))
-                playlists.get(3).getList().add(i);
-            playlists.get(4).getList().add(i);
-        }
-        return playlists;
-    }
+
     private void initListView(){
         listView = view.findViewById(R.id.playlist);
         listAdapter_fragment=
@@ -141,7 +104,9 @@ public class MainPlaylistFg extends Fragment{
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 singleList = Player.sameStringListToList(playlist.get(position));
-                ( (MainFragmentActivity) getActivity()).showSingleListFg(singleList);
+                myFg.sendSameString("歌单: "+playlist.get(position).getString(),singleList.size());
+                myFg.sendSingleList(singleList);
+                //( (MainFragmentActivity) getActivity()).showSingleListFg(singleList);
             }
         });
     }

@@ -2,6 +2,7 @@ package com.lc.musicplayer.MainFragment;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -11,12 +12,9 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.lc.musicplayer.FragmentActivity;
-import com.lc.musicplayer.MainFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
 import com.lc.musicplayer.tools.Data;
-import com.lc.musicplayer.tools.ListAdapter_Fragment;
-import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.SameStringIdList;
 import com.lc.musicplayer.tools.SameStringSongsFragment_Adapter;
 import com.lc.musicplayer.tools.Saver;
@@ -35,27 +33,46 @@ public class MainSameStringItemFg extends Fragment {
     private ListView listView;
     private FragmentActivity mActivity;
     private int testInt=0;
+    private FgSendDataToAct myFg;
 
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        myFg = (FgSendDataToAct) getActivity();
+        oriSongList = (List<Song>) Saver.readSongList("firstList");
+    }
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments()!=null){
+            this.singleList = (List<Integer>) getArguments().getSerializable("singleList");
+        }
+    }
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         view = inflater.inflate(R.layout.samestringsongs_layout, container, false);
-        initListView();
-        initOnClick();
+        listView = view.findViewById(R.id.sameStringSongs);
+        myFg.sendSingleListListView(listView);
         return view;
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            this.oriSongList = (List<Song>) getArguments().getSerializable("oriSongList");
-            this.singleList = (List<Integer>) getArguments().getSerializable("singleList");
-        }
+    public void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
     }
 
     @Override
     public void onSaveInstanceState (Bundle outState){
         super.onSaveInstanceState(outState);
+        if (listView!=null&&this.isVisible())
+            myFg.sendItemPositionAndFromTop(
+                    listView.getFirstVisiblePosition(),
+                    listView.getChildAt(0).getTop() );
     }
     @Override
     public void onPause(){
@@ -65,39 +82,28 @@ public class MainSameStringItemFg extends Fragment {
     public void onDestroy(){
         super.onDestroy();
     }
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-    }
+
     @Override
     public void onDetach() {
         super.onDetach();
     }
 
     public MainSameStringItemFg(){}
-    public static MainSameStringItemFg newInstance(List<Song> oriSongList , List<Integer> singleList ) {
+    public static MainSameStringItemFg newInstance( ) {
         MainSameStringItemFg mainSameStringItemFg = new MainSameStringItemFg();
-        List<SameStringIdList> sameStringList = initDefaultAlbumList(oriSongList,null);
-        if (oriSongList==null)
-            oriSongList= (List<Song>) Saver.readSongList("firstList");
+        return mainSameStringItemFg;
+    }
+    public static MainSameStringItemFg newInstance( List<Integer> singleList) {
+        MainSameStringItemFg mainSameStringItemFg = new MainSameStringItemFg();
         if (singleList==null)
-            singleList =Player.sameStringListToList(sameStringList.get(0));
-
-        Bundle args = new Bundle();
-        args.putSerializable("oriSongList",(Serializable) oriSongList);
-        args.putSerializable("singleList",(Serializable) singleList);
-        mainSameStringItemFg.setArguments(args);
+            singleList= ((List<SameStringIdList>) Saver.readData("playlist")).get(0).getList();
+        Bundle bundle =new Bundle();
+        bundle.putSerializable("singleList", (Serializable)singleList);
+        mainSameStringItemFg.setArguments(bundle);
         return mainSameStringItemFg;
     }
 
-    public static List<SameStringIdList> initDefaultAlbumList(List<Song> oriSongList,List<SameStringIdList> sameStringList ){
-        if (sameStringList==null)
-            sameStringList=Player.idToSameAlbumConvert(oriSongList);
-        return sameStringList;
-    }
-
-    private void initListView(){
-
+    public void initListView(List<Integer> singleList){
         listView = view.findViewById(R.id.sameStringSongs);
         sAdapter= new SameStringSongsFragment_Adapter(MyApplication.getContext()
                         ,singleList, oriSongList,Data.SameStringSingleList, R.layout.samestringsongs_item_layout);
@@ -107,9 +113,10 @@ public class MainSameStringItemFg extends Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                myFg.sendPlayerListAndItem(singleList, position);
                 //一定要先换列表再放歌, 不然有可能usingPositionId++了, 再用新的列表, 如果列表歌曲数目不够, 就会超出范围...
-                ( (MainFragmentActivity) getActivity()).getPlayer().setUsingPositionList(singleList);
-                ( (MainFragmentActivity) getActivity()).getPlayer().firstClickListItem(singleList.get(position));
+//                ( (MainFragmentActivity) getActivity()).getPlayer().setUsingPositionList(singleList);
+//                ( (MainFragmentActivity) getActivity()).getPlayer().firstClickListItem(singleList.get(position));
             }
         });
     }

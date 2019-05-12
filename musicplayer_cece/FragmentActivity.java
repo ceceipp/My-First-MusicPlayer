@@ -27,6 +27,7 @@ import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 import com.lc.musicplayer.tools.ViewPagerAdapter;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 public class FragmentActivity extends AppCompatActivity{
@@ -71,8 +72,8 @@ public class FragmentActivity extends AppCompatActivity{
         public void onServiceConnected(ComponentName name, IBinder iBinder) {
             myBinder = (MusicService.MyBinder) iBinder;
             //player=myBinder.getPlayer();
-            //songList=myBinder.getSongListFromService();
-            myBinder.setServiceSongListFromActivity(songList);
+            songList=myBinder.getSongListFromService();
+            //myBinder.setServiceSongListFromActivity(songList);
             myBinder.newInstancePlayer(songList);
             player=myBinder.getPlayer();
             //infoUpdate();
@@ -84,7 +85,7 @@ public class FragmentActivity extends AppCompatActivity{
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        songList=(List<Song>) Saver.readSongList("firstList");
+        //songList=(List<Song>) Saver.readSongList("firstList");
         lastPage=curPage=initPage=0;
         initService();
         initIntent();
@@ -172,8 +173,24 @@ public class FragmentActivity extends AppCompatActivity{
             viewPager.setCurrentItem(lastPage,false);
             lastPage=cachePage;
         }
-        else
+        else{
             viewPager.setCurrentItem(0,false);
+        }
+
+        if(firstTime==0){
+            firstTime = System.currentTimeMillis();
+            Toast.makeText(this,"back",Toast.LENGTH_SHORT).show();
+        }
+        else if (firstTime!=0){
+            secondTime =System.currentTimeMillis();
+            if (secondTime- firstTime>2000){
+                firstTime = 0; secondTime=0;
+                Toast.makeText(this,"back",Toast.LENGTH_SHORT).show();
+            }
+            else if (secondTime-firstTime<=2000){
+                intentPackThenChange(Data.MainFragmentActivity);
+            }
+        }
     }
 
     public void initFragment(){
@@ -263,7 +280,7 @@ public class FragmentActivity extends AppCompatActivity{
         });
     }
     public void initIntent(){
-        itemCount=getIntent().getIntExtra("itemCount",1);
+        itemCount=getIntent().getIntExtra("itemCount",0);
     }
     public void intentPackThenChange(int whichActivity){
         Intent intent=null;

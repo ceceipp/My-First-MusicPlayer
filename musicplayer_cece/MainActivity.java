@@ -4,25 +4,33 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.lc.musicplayer.MainFragment.MainPlaylistFg;
 import com.lc.musicplayer.service.MusicService;
 import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.Listview_Adapter;
 import com.lc.musicplayer.tools.Player;
+import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
 
+import java.io.Serializable;
 import java.util.List;
 //    /**
 //    * 我发现了一个大坑, infoUpdate ,这个ACT是先onCreate的infoupdate执行完,
@@ -64,8 +72,16 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder iBinder) {
             myBinder = (MusicService.MyBinder) iBinder;
             musicService = myBinder.getService();
-            player=myBinder.getPlayer();
-            song_list=myBinder.getSongListFromService();
+            if (myBinder.getPlayer()!=null){
+                player=myBinder.getPlayer();
+                if (myBinder.getSongListFromService()!=null)
+                    song_list=myBinder.getSongListFromService();
+            }
+            else {
+                myBinder.setServiceSongListFromActivity(song_list);
+                myBinder.newInstancePlayer(song_list);
+                player = myBinder.getPlayer();
+            }
             infoUpdate();
         }
         @Override
@@ -75,7 +91,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        song_list =(List<Song>) Saver.readSongList("firstList");
         setContentView(R.layout.list_layout);
+        initIntent();
         initService();
         handler.removeCallbacksAndMessages(null);
         handler.sendEmptyMessage(Data.Player_Loading_Msg);
@@ -252,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     else {
                         handler.removeCallbacksAndMessages(null);
-                        initListView(); initOnClick(); initIntent();
+                        initListView(); initOnClick(); //initIntent();
                         msg=obtainMessage(Data.MainActivityInfoUpdate);
                         handler.sendMessageDelayed(msg,500);
                     }
@@ -260,16 +278,15 @@ public class MainActivity extends AppCompatActivity {
                 }
                 case Data.MainActivityInfoUpdate:{
                     if (player.musicInfoNeedUpdate) {
-                        infoUpdate();
                         listView.setAdapter(adapter);
                         listView.setSelection(player.getUsingPositionList().indexOf(player.getUsingPositionId()));
+                        infoUpdate();
                         player.musicInfoNeedUpdate=false;
                     }
                     msg=obtainMessage(Data.MainActivityInfoUpdate);
                     handler.sendMessageDelayed(msg,500); break;
                 }
-                case Data.PlayerActivityInfoUpdate://break;
-                default: //break;
+                default: break;
             }
         }
     };

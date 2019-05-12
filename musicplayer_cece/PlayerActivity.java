@@ -23,6 +23,7 @@ import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.Song;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

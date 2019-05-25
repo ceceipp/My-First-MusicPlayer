@@ -19,8 +19,6 @@ import com.lc.musicplayer.tools.SameStringIdList;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MainPlaylistFg extends Fragment{
@@ -31,14 +29,22 @@ public class MainPlaylistFg extends Fragment{
     private ListView listView;
     private List<Integer> singleList;
     private int testInt=0;
+    private String TAG = "Ser1212";
     private FgSendDataToAct myFg;
+    private DialogFgFromPlaylistFg dialogFgFromPlaylistFg;
+
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         myFg = (FgSendDataToAct)context;
         oriSongList = (List<Song>) Saver.readSongList("firstList");
-        playlist =(List<SameStringIdList>) Saver.readData("playlist");
+        if (Saver.readData("playlist")!=null)
+            playlist =(List<SameStringIdList>) Saver.readData("playlist");
+        else {
+            playlist = Player.initDefaultPlaylist(oriSongList, null);
+            Saver.saveData("playlist", playlist,false);
+        }
     }
 
 
@@ -47,6 +53,7 @@ public class MainPlaylistFg extends Fragment{
         view = inflater.inflate(R.layout.playlist_layout, container, false);
         initListView();
         initOnClick();
+        dialogFgFromPlaylistFg = new DialogFgFromPlaylistFg();
         return view;
     }
 
@@ -104,13 +111,29 @@ public class MainPlaylistFg extends Fragment{
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 singleList = Player.sameStringListToList(playlist.get(position));
-                myFg.sendSameString("歌单: "+playlist.get(position).getString(),singleList.size());
-                myFg.sendSingleList(singleList);
+                myFg.sendSameString("歌单: "+playlist.get(position).getSameString(),singleList.size());
+                myFg.sendSingleList(singleList, "歌单: "+playlist.get(position).getSameString());
+                myFg.sendPlaylistClickPosition(position);
                 //( (MainFragmentActivity) getActivity()).showSingleListFg(singleList);
             }
         });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                showDialogFgFromPlaylistFg(playlist.get(position), oriSongList);
+                return true;
+            }
+        });
+    }
+    private void showDialogFgFromPlaylistFg(SameStringIdList singleList, List<Song> oriSongList){
+        dialogFgFromPlaylistFg.showNow(getActivity().getSupportFragmentManager(), "dialogFgFromPlaylistFg");
+        dialogFgFromPlaylistFg.showLlDialog_edit(singleList, playlist, oriSongList,  listAdapter_fragment );
+        //dialogFgFromPlaylistFg.showDetailsFgLlBg(singleList, oriSongList);
+        //myFg.sendSameStringListListView(listView);
+    }
+    public void updateData(){
+        this.playlist =(List<SameStringIdList>) Saver.readData("playlist");
+        listAdapter_fragment.setSameList(playlist);
+        listAdapter_fragment.notifyDataSetChanged();
     }
 }
-
-
-

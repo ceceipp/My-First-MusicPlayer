@@ -8,12 +8,10 @@ import android.graphics.BitmapFactory;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
-import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
-import com.lc.musicplayer.fragment.SameStringSongsFragment;
-import com.lc.musicplayer.tools.AudioUtils;
 import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
@@ -22,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public  class  MusicService extends Service {
+    private final static String TAG ="Ser1212";
     public static List<Song> songList;
             //=(List<Song>) Saver.readSongList("firstList");
     private static   Player player;
@@ -52,6 +51,14 @@ public  class  MusicService extends Service {
     @Override
     public void  onDestroy(){
         super.onDestroy();
+        List<Object> lastSavedObject =new ArrayList<>();
+        //lastSavedObject.add(songList);
+        if (player!=null&&player.getUsingPositionList()!=null){
+            lastSavedObject.add(player.getUsingPositionList());
+            lastSavedObject.add(player.getUsingPositionId());
+            lastSavedObject.add(player.getCurrentMSec());
+        }
+        Saver.saveData("lastSavedObject",lastSavedObject, false);
         player.mediaPlayer.stop();
         player.mediaPlayer.release();
         player=null;
@@ -72,10 +79,24 @@ public  class  MusicService extends Service {
         public void setServiceSongListFromActivity(List<Song> songListFromActivity){songList=songListFromActivity;}
         public void newInstancePlayer(List<Song> songListFromActivity){
             if (player==null){
-            player= new Player(songListFromActivity);
-            player.firstClickListItem(player.getUsingPositionList().size()-10);
-            player.stop();
+                player= new Player(songListFromActivity);
+                List<Object> lastSavedObject = (List<Object>) Saver.readData("lastSavedObject");
+                if (lastSavedObject!=null){
+                    player.setUsingPositionList((List<Integer>) lastSavedObject.get(0));
+                    if ( lastSavedObject.get(1)!=null)
+                        player.firstClickListItem((int) lastSavedObject.get(1));
+                    player.stop();
+                    player.seekTo((int)lastSavedObject.get(2));
+                }
+                else{
+                    player.firstClickListItem(player.getUsingPositionList().get(0));
+                    player.stop();
+                }
             }
+        }
+        public void initAlbumPicWithAlbumIdAtBackground( ){
+            if (songList!=null&&!songList.isEmpty())
+                Player.initAlbumPicBackground(songList);
         }
     }
 

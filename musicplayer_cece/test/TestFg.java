@@ -10,7 +10,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.lc.musicplayer.FragmentActivity;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.MainFragment.FgSendDataToAct;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
@@ -31,7 +31,7 @@ public class TestFg extends Fragment{
 
     private View view;
     private ListView listView;
-    private FragmentActivity mActivity;
+    private VpFragmentActivity mActivity;
     private int testInt=0;
     private FgSendDataToAct myFg;
 

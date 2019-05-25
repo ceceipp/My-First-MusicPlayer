@@ -4,15 +4,19 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,9 +27,9 @@ import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.Song;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.Inflater;
 
 public class PlayerActivity extends AppCompatActivity implements View.OnClickListener {
     private TextView songName = null;
@@ -46,6 +50,10 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     private MusicService musicService;
     private MusicService.MyBinder myBinder;
     private final String TAG ="Ser1212";
+    private boolean isLrc = false;
+
+    private TextView tvLrc;
+    //private LinearLayout llPlayerBg;
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -89,11 +97,26 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             case R.id.nextSong:       {    player.nextSong();  break;                      }
             case R.id.preSong:         {    player.preSong();  break;                        }
             case R.id.order:             {    player.change_Order_Mode();  break;      }
+            case R.id.playerPic:        {      showLrc(tvLrc); isLrc=!isLrc; break;}
+            case R.id.tvLrc:             {      goneLrc(tvLrc); isLrc=!isLrc; break;}
             default: break;
         }
         infoUpdate();
         infoUpdateRealTime();
     }
+
+    public void showLrc(TextView tvLrc) {
+        playerPic.setVisibility(View.GONE);
+        tvLrc.setText("歌词");
+        tvLrc.setVisibility(View.VISIBLE);
+        player.musicInfoNeedUpdate=true;
+    }
+    public void goneLrc(TextView tvLrc){
+        tvLrc.setVisibility(View.GONE);
+        playerPic.setVisibility(View.VISIBLE);
+        player.musicInfoNeedUpdate=true;
+    }
+
     public void initOnclick(){
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -128,6 +151,8 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         nextSong = findViewById(R.id.nextSong);
         preSong = findViewById(R.id.preSong);
         order =findViewById(R.id.order);
+        tvLrc = findViewById(R.id.tvLrc);
+        //llPlayerBg = findViewById(R.id.llPlayerBg);
         duration.setOnClickListener(this);
         playerPic.setOnClickListener(this);
         exitPlayer.setOnClickListener(this);
@@ -135,8 +160,11 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         nextSong.setOnClickListener(this);
         preSong.setOnClickListener(this);
         order.setOnClickListener(this);
+        tvLrc.setOnClickListener(this);
     }
     public void infoUpdate(){
+        if (songList==null||songList.isEmpty())
+            return;
         order.setText(Data.Order_Mode.get(player.order_Mode));
         startOrPause.setText(player.mediaPlayer.isPlaying()?"Pause":"Play");
         songName.setText(songList.get(player.getUsingPositionId()).getSong());
@@ -144,6 +172,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         //duration.setText(songList.get(player.getUsingPositionId()).getDuration());
         songAlbum.setText(songList.get(player.getUsingPositionId()).getAlbum());
         playerPic.setImageBitmap(Player.loadingCover(songList.get(player.getUsingPositionId()).getPath()));
+        //llPlayerBg.setBackground(new  BitmapDrawable(getResources(), Player.blur( Player.loadingCover(songList.get(player.getUsingPositionId()).getPath())  )));
     }
     public void initIntent(){
         itemCount=getIntent().getIntExtra("itemCount",0);
@@ -154,13 +183,17 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         unbindService(sc);
         Intent stopIntent=new Intent(this,MusicService.class);
         //stopService(stopIntent);
+        if (getIntent().getSerializableExtra("objectList")!=null)
+            intent.putExtra("objectList",getIntent().getSerializableExtra("objectList"));
         startActivity(intent);
         finish();
     }
     public void intentPackToFragment(){
-        Intent intent = new Intent(PlayerActivity.this,FragmentActivity.class);
+        Intent intent = new Intent(PlayerActivity.this,MainFragmentActivity.class);
         unbindService(sc);
         intent.putExtra("itemCount",itemCount);
+        if (getIntent().getSerializableExtra("objectList")!=null)
+            intent.putExtra("objectList",getIntent().getSerializableExtra("objectList"));
         startActivity(intent);
         finish();
     }
@@ -199,6 +232,17 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     // 所以必须等到player绑定到musicService的player(现在修改成private)后才能允许设置
     //否则会出错
 
+//    public void unPackBundle(){
+//        if (getIntent().getSerializableExtra("objectList")!=null){
+//            List<Object> mObjectList = (List<Object>) getIntent().getSerializableExtra("objectList");
+//            lastOnPausePage =(int) mObjectList.get(0);
+//            singleList =(List<Integer>) mObjectList.get(1);
+//            currentListViewPosition = (int)mObjectList.get(2);
+//            currentListViewPositionFromTop =(int) mObjectList.get(3);
+//            titleString.set(4, (String) mObjectList.get(4)   );
+//        }
+//    }
+
     Handler handler = new Handler() {
         @Override
         public  void handleMessage(Message msg){
@@ -233,6 +277,8 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     };
 
     public void infoUpdateRealTime(){
+        if (songList==null||songList.isEmpty())
+            return;
         seekBar.setProgress(player.seekBarPercentage());
         duration.setText(
                 AudioUtils.formatTime(player.mediaPlayer.getCurrentPosition())+

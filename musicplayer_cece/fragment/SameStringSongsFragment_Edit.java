@@ -9,14 +9,12 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.lc.musicplayer.FragmentActivity;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
-import com.lc.musicplayer.tools.AudioUtils;
 import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.SameStringIdList;
-import com.lc.musicplayer.tools.SameStringSongsFragment_Adapter;
 import com.lc.musicplayer.tools.SameStringSongsFragment_Edit_Adapter;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
@@ -38,7 +36,7 @@ public class SameStringSongsFragment_Edit extends Fragment {
     private View view;
     private ListView listView;
 
-    private FragmentActivity mActivity;
+    private VpFragmentActivity mActivity;
     private Player player;
     private int position;
     private SameStringSongsFragment_Edit_Adapter sAdapter;
@@ -49,7 +47,7 @@ public class SameStringSongsFragment_Edit extends Fragment {
     @Override
     public void onAttach(Context context){
         super.onAttach(context);
-        mActivity = (FragmentActivity) context;
+        mActivity = (VpFragmentActivity) context;
         oriSongList= mActivity.getOriSongList();
         if (oriSongList==null)
             oriSongList=(List<Song>) Saver.readSongList("firstList");

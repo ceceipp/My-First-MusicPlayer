@@ -1,10 +1,7 @@
 package com.lc.musicplayer.tools;
 
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,7 +9,6 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.lc.musicplayer.R;
 
@@ -25,6 +21,9 @@ public class SameStringSongsFragment_Adapter extends BaseAdapter  {
     private List<Song> oriList;
     private List<Integer> sameStringSingleList;
     private Dialog ddd;
+    public interface DialogCallback{
+        public void sendData(List<Integer> singleList, int position);
+    }
     public SameStringSongsFragment_Adapter(Context context, List<Integer> sameStringSingleList
             , List<Song> oriList , int whatList, int mResId){
         this.context= context;
@@ -33,7 +32,6 @@ public class SameStringSongsFragment_Adapter extends BaseAdapter  {
         this.mResId = mResId;
         this.oriList=oriList;
     }
-
     @Override
     public int getCount() {
         return sameStringSingleList.size();
@@ -58,7 +56,7 @@ public class SameStringSongsFragment_Adapter extends BaseAdapter  {
             holder.songSinger = convertView.findViewById(R.id.songSinger);
             holder.duration = convertView.findViewById(R.id.duration);
             holder.playerPic= convertView.findViewById(R.id.playerPic);
-            holder.dialog =  convertView.findViewById(R.id.dialogBtn);
+            //holder.dialog =  convertView.findViewById(R.id.dialogBtn);
             convertView.setTag(holder);
         }
         else holder = (ViewHolder)convertView.getTag();
@@ -67,14 +65,21 @@ public class SameStringSongsFragment_Adapter extends BaseAdapter  {
         holder.songSinger.setText(  oriList.get( sameStringSingleList.get(position)).getSinger());
         holder.duration.setText(   oriList.get(  sameStringSingleList.get(position)).getDuration());
 
-        if (  oriList.get(  sameStringSingleList.get(position)).getAlbum_Picture_Id()==0  )
-            holder.playerPic.setImageResource(
-                    Player.fileFormatdDetect(  oriList.get(sameStringSingleList.get(position)).getPath()));
-        else
+        if ( oriList.get( sameStringSingleList.get(position)).getIsAlbumPicExist() ){
             holder.playerPic.setImageBitmap(
-                    Saver.getLocalCache( " "+ oriList.get(sameStringSingleList.get(position)).getAlbum_Picture_Id()  ));
-
-        initSetOnClick(holder.dialog, position);
+                    Saver.getLocalCache(
+                            " "+  oriList.get(sameStringSingleList.get(position) ).getAlbum_Picture_Id()  ));
+        }
+        else {
+            holder.playerPic.setImageResource(
+                    Player.fileFormatDetect(  oriList.get( sameStringSingleList.get(position) ).getPath()  )  );
+        }
+//        if (  oriList.get(  sameStringSingleList.get(position)).getAlbum_Picture_Id()==0  )
+//            holder.playerPic.setImageResource(
+//                    Player.fileFormatDetect(  oriList.get(sameStringSingleList.get(position)).getPath()));
+//        else
+//            holder.playerPic.setImageBitmap(
+//                    Saver.getLocalCache( " "+ oriList.get(sameStringSingleList.get(position)).getAlbum_Picture_Id()  ));
         return convertView;
     }
 
@@ -84,7 +89,7 @@ public class SameStringSongsFragment_Adapter extends BaseAdapter  {
         TextView songSinger ;
         TextView duration;
         ImageView playerPic;
-        TextView dialog;
+        //TextView dialog;
     }
     void initSetOnClick(TextView dialog, final int position){
         dialog.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener()  {

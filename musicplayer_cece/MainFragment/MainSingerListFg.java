@@ -9,7 +9,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.lc.musicplayer.FragmentActivity;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
 import com.lc.musicplayer.tools.Data;
@@ -19,7 +19,6 @@ import com.lc.musicplayer.tools.SameStringIdList;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
-import java.io.Serializable;
 import java.util.List;
 
 public class MainSingerListFg extends Fragment {
@@ -28,17 +27,24 @@ public class MainSingerListFg extends Fragment {
     private ListAdapter_Fragment listAdapter_fragment;
     private View view;
     private ListView listView;
-    private FragmentActivity mActivity;
+    private VpFragmentActivity mActivity;
     private List<Integer> singleList;
     private int testInt=0;
     private FgSendDataToAct myFg;
+    private DialogFgFromPlaylistFg dialogFgFromPlaylistFg;
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         myFg = (FgSendDataToAct)context;
         oriSongList = (List<Song>) Saver.readSongList("firstList");
-        singerList =(List<SameStringIdList>) Saver.readData("singerList");
+        if (Saver.readData("singerList")!= null){
+            singerList =(List<SameStringIdList>) Saver.readData("singerList");
+        }
+        else {
+            singerList = Player.idToSameSingerConvert(oriSongList);
+            Saver.saveData("singerList", singerList, false);
+        }
     }
 
     @Override
@@ -46,6 +52,7 @@ public class MainSingerListFg extends Fragment {
         view = inflater.inflate(R.layout.singerlist_layout, container, false);
         initListView();
         initOnClick();
+        dialogFgFromPlaylistFg = new DialogFgFromPlaylistFg();
         return view;
     }
 
@@ -87,12 +94,25 @@ public class MainSingerListFg extends Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
                 singleList = Player.sameStringListToList(singerList.get(position));
-                myFg.sendSameString("歌手: "+ singerList.get(position).getString(),singleList.size());
-                myFg.sendSingleList(singleList);
+                myFg.sendSameString("歌手: "+ singerList.get(position).getSameString(),singleList.size());
+                myFg.sendSingleList(singleList, "歌手: "+ singerList.get(position).getSameString());
                 //( (MainFragmentActivity) getActivity()).showSingleListFg(singleList);
             }
         });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                showDialogFgFromPlaylistFg(singerList.get(position), oriSongList);
+                return true;
+            }
+        });
+    }
+    private void showDialogFgFromPlaylistFg(SameStringIdList singleList, List<Song> oriSongList){
+        dialogFgFromPlaylistFg.showNow(getActivity().getSupportFragmentManager(), "dialogFgFromSingerListFg");
+        dialogFgFromPlaylistFg.showLlDialog_edit_notPlaylist(singleList, singerList, oriSongList,  listAdapter_fragment );
+        //dialogFgFromPlaylistFg.setNotPlaylistMode();
+        //dialogFgFromPlaylistFg.showDetailsFgLlBg(singleList, oriSongList);
+        //myFg.sendSameStringListListView(listView);
     }
 }

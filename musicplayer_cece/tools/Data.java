@@ -24,17 +24,21 @@ public final class Data {
     public static final int MainActivityInfoUpdate=2;
     public static final int PlayerActivityInfoUpdate=3;
     public static final int MainFragmentActivityInfoUpdate=4;
-    public static final int FragmentActivityInfoUpdate=5;
+    public static final int VpFragmentActivityInfoUpdate =5;
     public static final int SamePlaylist =0;
     public static final int SameAlbumList =1;
     public static final int SameSingerList=2;
     public static final int SamePathList =3;
     public static final int SameStringSingleList =4;
     public static final int SameStringSingleListEdit =5 ;
+
     public static final int MainFragmentActivity=0;
     public static final int MainActivity=1;
     public static final int PlayerActivity=2;
-    public static final int FragmentActivity=3;
+    public static final int VpFragmentActivity =3;
+    public static final int EditActivity = 4;
+    public static final int SettingActivity = 5;
+    public static final int SearchActivity = 6;
 
     //public static final List<String> Order_Mode =   List.of("1", "2");
     // Java9才支持上面的方法

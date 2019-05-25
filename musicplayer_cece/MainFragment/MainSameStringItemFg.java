@@ -4,15 +4,13 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.lc.musicplayer.FragmentActivity;
-import com.lc.musicplayer.MyApplication;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.R;
 import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.SameStringIdList;
@@ -31,7 +29,7 @@ public class MainSameStringItemFg extends Fragment {
 
     private View view;
     private ListView listView;
-    private FragmentActivity mActivity;
+    private VpFragmentActivity mActivity;
     private int testInt=0;
     private FgSendDataToAct myFg;
 
@@ -105,7 +103,7 @@ public class MainSameStringItemFg extends Fragment {
 
     public void initListView(List<Integer> singleList){
         listView = view.findViewById(R.id.sameStringSongs);
-        sAdapter= new SameStringSongsFragment_Adapter(MyApplication.getContext()
+        sAdapter= new SameStringSongsFragment_Adapter(getActivity()
                         ,singleList, oriSongList,Data.SameStringSingleList, R.layout.samestringsongs_item_layout);
         listView.setAdapter(sAdapter);
     }

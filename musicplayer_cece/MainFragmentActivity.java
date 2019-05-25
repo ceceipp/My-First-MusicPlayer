@@ -3,12 +3,12 @@ package com.lc.musicplayer;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
@@ -19,6 +19,7 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.Spinner;
@@ -27,6 +28,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lc.musicplayer.MainFragment.Adapter.SpinnerForFgList_Adapter;
+import com.lc.musicplayer.MainFragment.DialogFg;
+import com.lc.musicplayer.MainFragment.DialogFgDetails;
+import com.lc.musicplayer.MainFragment.DialogFgFromPlaylistFg;
+import com.lc.musicplayer.MainFragment.DialogFg_AddToPlaylist;
 import com.lc.musicplayer.MainFragment.FgSendDataToAct;
 import com.lc.musicplayer.MainFragment.MainAlbumListFg;
 import com.lc.musicplayer.MainFragment.MainPathListFg;
@@ -35,6 +40,7 @@ import com.lc.musicplayer.MainFragment.MainSameStringItemEditFg;
 import com.lc.musicplayer.MainFragment.MainSameStringItemFg;
 import com.lc.musicplayer.MainFragment.MainSingerListFg;
 import com.lc.musicplayer.service.MusicService;
+import com.lc.musicplayer.tools.AudioUtils;
 import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.SameStringIdList;
@@ -42,6 +48,7 @@ import com.lc.musicplayer.tools.SameStringSongsFragment_Adapter;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -50,14 +57,14 @@ import java.util.List;
  * 所以如果擅自加入songList在fg的bundle的话, 在songlist保存songlist的时候肯定要完蛋的,
  * 也就是说简单的锁屏 , 都会经历保存songlist的回调, 然后一保存就GG
  * 我现在打算用本地文件来做, 虽然会慢一点, 但是稳妥~!**/
-public class MainFragmentActivity extends AppCompatActivity implements FgSendDataToAct {
+public class MainFragmentActivity extends AppCompatActivity implements FgSendDataToAct , DialogFg.DialogFgCallback
+        ,DialogFgDetails.DialogFgDetailsCallback, DialogFg_AddToPlaylist.CallBackAboutDialogFg_AddToPlaylistToEditActivity {
     private MusicService.MyBinder myBinder;
     private MainPlaylistFg playlistFragment;
     private MainAlbumListFg albumFragment;
     private MainSingerListFg singerFragment;
     private MainPathListFg pathFragment;
     private MainSameStringItemFg sameSingleFragment;
-    private MainSameStringItemEditFg sameStringSongsFragment_edit;
     private FragmentManager fm;
     private FragmentTransaction ft;
     private Spinner spinnerForFgList_sameString;
@@ -71,33 +78,80 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
     private Player player;
     private List<String> titleString;
     private List<String> fgListString;
-    private TextView songName , songSinger, duration;
+    private TextView songName , songSinger, duration, sameStringList;
     private ImageView playerPic;
-    private Button startOrPause , nextSong, order, settingBtn, exitBtn;
+    private Button startOrPause , nextSong, order, settingBtn ;
     private SearchView searchView;
+    private DialogFg dialogFg;
     private int fgNum, itemCount, usingPosition;
     private int lastOnPausePage = -1;
     private int currentListViewPosition =-1;
     private int currentListViewPositionFromTop = 0;
+    //private boolean isEverIntoFg4=false;
+
+    private boolean isFromPlaylist = false;
+    private int whichPositionFromPlaylist = -1;
+
     private long firstTime, secondTime;
     private Switch switchBtn;
     private String TAG = "Ser1212";
     private FrameLayout frameLayout;
-    private int i= 3 ;
     private ListView singleListListView, currentSameStringListListView;
+    private List<TextView> dialogFgTvList;
     private SameStringSongsFragment_Adapter sAdapter;
+    private DialogFgDetails dialogFgDetails;
+    private List<TextView> dialogFgDetailsTvList;
+    private ImageView dialogFgDetails_iv0;
+    private LinearLayout detailsFgLlBg, dialogFgLlBg;
+    private DialogFg_AddToPlaylist dialogFg_addToPlaylist;
 
-    /**getFragments我猜返回的是当前显示的所有Fragment, 加载了但是没显示的不在getFragments里面
-     * 而getBackStackEntryCount()是退回到这个stack的fg个数
-     * fg**/
+    private Integer songIdWhichAddToPlaylist;
+
+    @Override
+    public void getTheSelectStringAndOriFavList(String theSelectString, List<Integer> oriFavList) {
+        if (songIdWhichAddToPlaylist==null)
+            return;
+        oriFavList.add(songIdWhichAddToPlaylist);
+        Player.SaveNewFavListInDataFile(this, theSelectString, oriFavList, "playlist");
+        Toast.makeText(this, "已加入", Toast.LENGTH_SHORT).show();
+        playlistFragment.updateData();
+        dialogFg_addToPlaylist.dismiss();
+    }
+
+    @Override
+    public void setANewList(String newListName) {
+        List<Integer> addList = new ArrayList<>();
+        addList.add(songIdWhichAddToPlaylist);
+        Player.SaveNewFavListInDataFile(this, newListName, addList , "playlist");
+        playlistFragment.updateData();
+    }
+
     @Override
     public void sendSameString(String string,int sameStringItemsCount) {
         Toast.makeText(this, string+", "+sameStringItemsCount+"首",Toast.LENGTH_SHORT).show();
+        sameStringList.setText(string+", "+sameStringItemsCount+"首");
+        //isEverIntoFg4=true;
     }
+
     @Override
-    public void sendSingleList(List<Integer> singleListFromFg) {
+    public void sendPlaylistClickPosition(int position) {
+        if (Saver.readData("playlist")!=null&&
+                position< ((List<SameStringIdList>)(Saver.readData("playlist"))).size()){
+            isFromPlaylist= true;
+            this.whichPositionFromPlaylist = position;
+        }
+    }
+
+    @Override
+    public void sendSingleList(List<Integer> singleListFromFg, String sameString) {
         this.singleList = singleListFromFg;
+        if (sameString!=null) {
+            String cacheString = sameString +", "+singleList.size()+"首";
+            titleString.set(4,cacheString );
+        }
         showFragment(fgList.get(4));
+        sameStringList.setText(titleString.get(4) );
+        //sameStringList.setText(sameString+", "+singleList.size()+"首" );
         spinnerForFgList_sameString.setSelection(4,true);
 
         if (singleListListView!=null && this.singleList!=null) {
@@ -111,8 +165,58 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
                     player.firstClickListItem(singleList.get(position) );
                 }
             });
-
+            dialogFgOnItemLongClickInit();
         }
+        if (singleList!=null&&!singleList.isEmpty()){
+            //如果显示第4页, 自动显示可编辑开关, 且有列表可编辑
+            switchBtn.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void dialogFgOnItemLongClickInit(){
+        singleListListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(final AdapterView<?> parent, View view, final int position, long id) {
+                showDialogFg();
+                dialogFgLlBg.setBackground(new BitmapDrawable(getResources(),(Player.blur(Player.loadingCover(songList.get(singleList.get(position)).getPath())))));
+                dialogFgTvList.get(0).setText(songList.get(singleList.get(position)).getSong());
+                dialogFgTvList.get(1).setText(songList.get(singleList.get(position)).getSinger()+" - "+
+                        songList.get(singleList.get(position)).getAlbum());
+                dialogFgTvList.get(2).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        player.addSongIdToPlaybackQueue(singleList.get(position));
+                        dialogFg.dismiss();
+                    }
+                });
+                dialogFgTvList.get(3).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        showDialogFgAddToPlaylist();
+                        songIdWhichAddToPlaylist = singleList.get(position);
+                        dialogFg.dismiss();
+                    }
+                });
+                dialogFgTvList.get(4).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        showDetailsDialogFg();
+                        detailsFgLlBg.setBackground(new BitmapDrawable(getResources(),(Player.blur(Player.loadingCover(songList.get(singleList.get(position)).getPath())))));
+                        dialogFgDetails_iv0.setImageBitmap(Player.loadingCover(songList.get(singleList.get(position)).getPath()));
+                        dialogFgDetailsTvList.get(0).setText(songList.get(singleList.get(position)).getSong());
+                        dialogFgDetailsTvList.get(1).setText(songList.get(singleList.get(position)).getSinger());
+                        dialogFgDetailsTvList.get(2).setText(songList.get(singleList.get(position)).getAlbum());
+                        dialogFgDetailsTvList.get(3).setText(songList.get(singleList.get(position)).getPath());
+                        String fileSize =  String.format("%.2f",((float)songList.get(singleList.get(position)).getFileSize()/(1024*1024)));
+                        dialogFgDetailsTvList.get(4).setText(songList.get(singleList.get(position)).getDuration()+", "
+                                +fileSize+"MB");
+                        dialogFg.dismiss();
+                    }
+                });
+                return true;
+            }
+
+        });
     }
     @Override
     public void sendPlayerListAndItem(List<Integer> singleList, int position) {
@@ -127,33 +231,59 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
     public void sendSameStringListListView(ListView sameStringListListView) {
         this.currentSameStringListListView = sameStringListListView;
     }
-
     @Override
     public void sendItemPositionAndFromTop(int position, int fromTop) {
         currentListViewPosition = position;
         currentListViewPositionFromTop =fromTop;
+    }
+    @Override
+    public void DialogSendData(LinearLayout linearLayout, List<TextView> tvList) {
+        this.dialogFgLlBg = linearLayout;
+        this.dialogFgTvList = tvList;
+    }
+    @Override
+    public void sendDetailsIdList(LinearLayout linearLayout, ImageView imageView, List<TextView> textViewList) {
+        detailsFgLlBg = linearLayout;
+        dialogFgDetails_iv0 = imageView;
+        dialogFgDetailsTvList = textViewList;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_fragment_layout);
-        if (songList==null)
-            songList =(List<Song>) Saver.readSongList("firstList");
+        if (songList==null){
+            if ( Saver.readSongList("firstList")==null
+                    //||((List<Song>)Saver.readSongList("firstList")).isEmpty()
+                    ) {
+                songList = AudioUtils.getSongs(this);
+                Saver.saveSongList("firstList", songList);
+            }
+            else {
+                songList =(List<Song>) Saver.readSongList("firstList");
+            }
+            //firstDataList =(List<Object>) Saver.readData("lastSavedObject");
+            //songList = (List<Song>) firstDataList.get(0);
+        }
         initIntent();
         handler.sendEmptyMessage(Data.Player_Loading_Msg);
         initFindViewIdBy();
         initServiceThenStartIt();
         initAdapter();
         initFragment();
+        //完善addToPlaylist用的
+        dialogFg_addToPlaylist = new DialogFg_AddToPlaylist();
+
         if (lastOnPausePage==-1){
             showFragment(fgList.get(0));
+            sameStringList.setText(titleString.get(0));
             spinnerForFgList_sameString.setSelection(0,true);
         }
         else if (lastOnPausePage>=0&&lastOnPausePage<5){
             if (lastOnPausePage!=4){
                 showFragment(fgList.get(lastOnPausePage));
                 spinnerForFgList_sameString.setSelection(lastOnPausePage,true);
+                sameStringList.setText(titleString.get(lastOnPausePage));
             }
             else {
 //                showFragment(fgList.get(4));
@@ -221,11 +351,12 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
         order = findViewById(R.id.order_fg);
         searchView=findViewById(R.id.searchView_fg);
         switchBtn= findViewById(R.id.switchBtn);
-        exitBtn =findViewById(R.id.exit);
         spinnerForFgList_sameString= findViewById(R.id.spinnerForFgList);
+        sameStringList =findViewById(R.id.sameStringList);
     }
     public void initFragment(){
         if (getLastCustomNonConfigurationInstance() != null){
+            //转到屏幕时取得包
             fm=getSupportFragmentManager();
             removeAllFgBackStackEntry();
             List<Object> mObjectList = (List<Object>)getLastCustomNonConfigurationInstance();
@@ -235,6 +366,10 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
             singleList =(List<Integer>) mObjectList.get(2);
             currentListViewPosition = (int)mObjectList.get(3);
             currentListViewPositionFromTop =(int) mObjectList.get(4);
+            titleString.set(4, (String) mObjectList.get(5)   );
+            //转到屏幕时才有下面这句, 因为这个时在转到屏幕时打包的
+//            if (mObjectList.size()>=7)
+//                isEverIntoFg4= (boolean) mObjectList.get(6);
             playlistFragment =(MainPlaylistFg) fgList.get(0);
             albumFragment = (MainAlbumListFg) fgList.get(1);
             singerFragment = (MainSingerListFg) fgList.get(2);
@@ -242,6 +377,7 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
             sameSingleFragment = (MainSameStringItemFg) fgList.get(4);
         }
         else {
+            unPackBundle();
             fgList = new ArrayList<>();
             playlistFragment = MainPlaylistFg.newInstance();
             fgList.add(playlistFragment);
@@ -254,6 +390,9 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
             sameSingleFragment = MainSameStringItemFg.newInstance();
             fgList.add(sameSingleFragment);
         }
+        dialogFg = new DialogFg();
+        dialogFgDetails = new DialogFgDetails();
+
         fgListString = new ArrayList<>();
         fgListString.add("playlistFragment");
         fgListString.add("albumFragment");
@@ -269,6 +408,8 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
         addFg(sameSingleFragment, fgListString.get(4));
     }
     public void infoUpdate() {
+        if (songList==null||songList.isEmpty())
+            return;
         songName.setText(songList.get(player.getUsingPositionId()).getSong());
         songSinger.setText(songList.get(player.getUsingPositionId()).getSinger());
         duration.setText(songList.get(player.getUsingPositionId()).getDuration());
@@ -303,9 +444,18 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
         switch (whichActivity){
             case Data.MainActivity:  intent =new Intent(MainFragmentActivity.this, MainActivity.class);break;
             case Data.PlayerActivity:  intent =new Intent(MainFragmentActivity.this, PlayerActivity.class);break;
-            case Data.FragmentActivity: intent =new Intent(MainFragmentActivity.this, FragmentActivity.class);break;
+            case Data.VpFragmentActivity: intent =new Intent(MainFragmentActivity.this, VpFragmentActivity.class);break;
+            case Data.EditActivity:  {
+                intent =new Intent(MainFragmentActivity.this, EditActivity.class);
+                intent.putExtra("isFromPlaylist", isFromPlaylist);
+                intent.putExtra("whichPositionFromPlaylist", whichPositionFromPlaylist);
+                break;
+            }
+            case Data.SettingActivity :{intent =new Intent(MainFragmentActivity.this, SettingActivity.class);break;}
+            case Data.SearchActivity:   {intent = new Intent(MainFragmentActivity.this, SearchActivity.class);break;}
             default:break;
         }
+        intent.putExtras(packBundleAndLeaveThisAct());
         intent.putExtra("itemCount", itemCount);
         handler.removeCallbacksAndMessages(null);
         unbindService(sc);
@@ -323,11 +473,13 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
     private ServiceConnection sc = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder iBinder) {
+
             myBinder = (MusicService.MyBinder) iBinder;
             if (myBinder.getSongListFromService()==null)
                 myBinder.setServiceSongListFromActivity(songList);
-            if (songList!=null)
+            if (songList!=null){
                 myBinder.newInstancePlayer(songList);
+            }
             player=myBinder.getPlayer();
         }
         @Override
@@ -350,17 +502,10 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
             @Override
             public void onClick(View v) { player.change_Order_Mode();order.setText(Data.Order_Mode.get(player.order_Mode)); }
         });
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
             @Override
-            public boolean onQueryTextSubmit(String query) {
-                player.findSongWithTitle(query);
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                //player.findSongWithTitle(newText);
-                return false;
+            public void onClick(View v) {
+                intentPackThenChange(Data.SearchActivity);
             }
         });
         playerPic.setOnClickListener(new View.OnClickListener() {
@@ -369,27 +514,36 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
                 intentPackThenChange(Data.PlayerActivity);
             }
         });
-        exitBtn.setOnClickListener(new View.OnClickListener() {
+        settingBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                intentPackThenExit();
+                intentPackThenChange(Data.SettingActivity);
             }
         });
         switchBtn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                Log.d(TAG, ": \ngetBackStackEntryCount  "+
-                        getSupportFragmentManager().getBackStackEntryCount()+
-                        "\ngetSupportFragmentManager().getFragments() " +
-                        getSupportFragmentManager().getFragments()+"\ngetPrimaryNavigationFragment "
-                        +fm.getPrimaryNavigationFragment()+"\n isAdded? "+ fgList.get(2).isAdded());
+                //先检查null, 不要先检查isEmpty, 因为isEmpty是要singleList!=null才行. 而if会先做左边的, 注意注意..
+                //if (singleList!=null&&!singleList.isEmpty()&&isEverIntoFg4)
+                if (singleList!=null&&!singleList.isEmpty()){
+                    Saver.saveData("singleListToEditActivity",  singleList, false);
+                    intentPackThenChange(Data.EditActivity);
+                }
             }
         });
         spinnerForFgList_sameString.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 showFragment(fgList.get(position));
+                sameStringList.setText(titleString.get(position));
                 //lastOnPausePage=position;
+                //如果显示第4页, 自动显示可编辑开关, 且有列表可编辑
+                if (position==4&&singleList!=null&&!singleList.isEmpty()){
+                    switchBtn.setVisibility(View.VISIBLE);
+                }
+                else {
+                    switchBtn.setVisibility(View.GONE);
+                }
             }
 
             @Override
@@ -397,38 +551,6 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
             }
         });
     }
-//    public void runFgTransaction(int i){
-//        fm= getSupportFragmentManager();
-//        if (i==Data.SameStringSingleList ){
-//            if (titleString.size()<5) {
-//                titleString.add("Single List Item");
-//                listCountList.add(singleList.size());
-//            }
-//            listCountList.set(4,singleList.size());
-//            ft= fm.beginTransaction();
-//            ft.replace(R.id.fragmentList,MainSameStringItemFg.newInstance(singleList ));
-//            ft.commit();
-//        }
-//        else if (i >= Data.SameStringSingleListEdit){
-//            if (titleString.size()<6){
-//                titleString.add("Item Edit");
-//                listCountList.add(singleList.size());
-//            }
-//            listCountList.set(5,singleList.size());
-//            ft= fm.beginTransaction();
-//            ft.replace(R.id.fragmentList,MainSameStringItemEditFg.newInstance(songList, singleList));
-//            ft.addToBackStack(null);
-//            ft.commit();
-//        }
-//        else {
-//            ft=fm.beginTransaction();
-//            ft.replace(R.id.fragmentList, fgList.get(i));
-//            //ft.addToBackStack(null);
-//            ft.commit();
-//        }
-//        spinnerForFgList_sameString.setSelection(i);
-//    }
-
     public void setSingleList(List<Integer> singleList) {
         this.singleList = singleList;
     }
@@ -470,6 +592,17 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
         getSupportFragmentManager().beginTransaction().show(fragment).commit();
     }
 
+    private void showDialogFg(){
+        dialogFg.showNow(getSupportFragmentManager(), "dialogFg");
+    }
+    private void showDetailsDialogFg(){
+        dialogFgDetails.showNow(getSupportFragmentManager(),"dialogFgDetails");
+    }
+    private void showDialogFgAddToPlaylist(){
+        dialogFg_addToPlaylist.showNow(getSupportFragmentManager(), "dialogFg_addToPlaylist");
+        dialogFg_addToPlaylist.showViewForAddToPlaylist();
+    }
+
     private void removeAllFragment(){
         for (Fragment fg:fgList)
             getSupportFragmentManager().beginTransaction().detach(fg).commit();
@@ -485,9 +618,50 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
         //currentListViewPosition就是下面的值
         objectList.add(currentListViewPosition);
         objectList.add(currentListViewPositionFromTop);
+        objectList.add(titleString.get(4));
+        //LeaveAct的时候没有打包 isEverIntoFg4, 所以这里要注意不要数组越界
+        //在解包时要判断有没有7个数据
+        //objectList.add(isEverIntoFg4);
         return objectList;
     }
-
+    public Bundle packBundleAndLeaveThisAct(){
+        Bundle bundle =new Bundle();
+        List<Object> objectList = new ArrayList<>();
+        //由于没有保存fgList, 所以提取的时候下标index要改变一个单位
+        //objectList.add(fgList);
+        objectList.add(spinnerForFgList_sameString.getSelectedItemPosition());
+        objectList.add(singleList);
+        //currentListViewPosition就是下面的值
+        //为什么要两个判断? 因为其实第一个判断在initFragment后就回调获得了,
+        //但是那个时候的fg并没有listView的Data, 所以根本就没有setAdapter,
+        //也就是说那个时候fg的listView的列表根本没建立起来, 所以get不到任何子Item信息
+        //如果有了singleList!=null, 那就说明至少点击了一次项目fg, 然后回调使得setAdapter
+        //这个时候便有真正的列表了, 这个地方很阴险哈哈哈
+        if (singleListListView!=null&&singleList!=null&&singleListListView.getChildAt(0)!=null){
+            objectList.add(singleListListView.getFirstVisiblePosition());
+            objectList.add(singleListListView.getChildAt(0).getTop());
+        }
+        else {
+            objectList.add(0);
+            objectList.add(0);
+        }
+        objectList.add(titleString.get(4));
+        //LeaveAct的时候没有打包 isEverIntoFg4, 所以这里要注意不要数组越界
+        //在解包时要判断有没有7个数据
+        bundle.putSerializable("objectList",(Serializable) objectList);
+        return bundle;
+    }
+    public void unPackBundle(){
+        if (getIntent().getSerializableExtra("objectList")!=null){
+            List<Object> mObjectList = (List<Object>) getIntent().getSerializableExtra("objectList");
+            lastOnPausePage =(int) mObjectList.get(0);
+            singleList =(List<Integer>) mObjectList.get(1);
+            currentListViewPosition = (int)mObjectList.get(2);
+            currentListViewPositionFromTop =(int) mObjectList.get(3);
+            titleString.set(4, (String) mObjectList.get(4)   );
+            //LeaveAct的时候没有打包 isEverIntoFg4, 所以这里要注意不要数组越界
+        }
+    }
 
     private void delFg(String stringTag){
         FragmentManager fm = getSupportFragmentManager();
@@ -517,7 +691,7 @@ public class MainFragmentActivity extends AppCompatActivity implements FgSendDat
                         msg=obtainMessage(Data.MainFragmentActivityInfoUpdate);
                         handler.sendMessage(msg);
                         if (lastOnPausePage==4){
-                            sendSingleList(singleList);
+                            sendSingleList(singleList, null);
                             singleListListView.
                                     setSelectionFromTop(currentListViewPosition,currentListViewPositionFromTop);
                         }

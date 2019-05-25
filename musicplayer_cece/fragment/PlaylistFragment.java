@@ -1,24 +1,19 @@
 package com.lc.musicplayer.fragment;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
-import com.lc.musicplayer.FragmentActivity;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
-import com.lc.musicplayer.service.MusicService;
-import com.lc.musicplayer.tools.AudioUtils;
 import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.ListAdapter_Fragment;
 import com.lc.musicplayer.tools.Player;
@@ -26,7 +21,6 @@ import com.lc.musicplayer.tools.SameStringIdList;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -42,14 +36,14 @@ public class PlaylistFragment  extends Fragment {
 
     private View view;
     private ListView listView;
-    private FragmentActivity mActivity;
+    private VpFragmentActivity mActivity;
     private List<Integer> singleList;
     private int testInt=0;
 
     @Override
     public void onAttach(Context context){
         super.onAttach(context);
-        mActivity = (FragmentActivity) context;
+        mActivity = (VpFragmentActivity) context;
         oriSongList=mActivity.getOriSongList();
 //        if (oriSongList==null)
 //            oriSongList=(List<Song>) Saver.readSongList("firstList");
@@ -61,6 +55,7 @@ public class PlaylistFragment  extends Fragment {
         oriSongList=mActivity.getOriSongList();
         if (oriSongList==null)
             oriSongList=(List<Song>) Saver.readSongList("firstList");
+        if (oriSongList==null) oriSongList = new ArrayList<>();
         initData();
         view = inflater.inflate(R.layout.playlist_layout, container, false);
         listView = view.findViewById(R.id.playlist);
@@ -105,6 +100,10 @@ public class PlaylistFragment  extends Fragment {
         return pf;
     }
     private void initData(){
+        if (oriSongList==null||oriSongList.isEmpty()){
+            playlists=new ArrayList<>();
+            return;
+        }
         playlists=new ArrayList<>();
         //其实下面这句用法不够好, 因为这句应该用在onAttach中 , 这样用其实算内存泄露....
         //只不过误打误撞中了

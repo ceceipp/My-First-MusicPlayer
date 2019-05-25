@@ -38,6 +38,7 @@ import com.lc.musicplayer.MainFragment.MainSingerListFg;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.PlayerActivity;
 import com.lc.musicplayer.R;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.service.MusicService;
 import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.Player;
@@ -46,7 +47,6 @@ import com.lc.musicplayer.tools.SameStringSongsFragment_Adapter;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -79,7 +79,7 @@ public class TestActivity extends AppCompatActivity implements FgSendDataToAct {
     private TextView songName , songSinger, duration;
     private ImageView playerPic;
     private Button startOrPause , nextSong, order, settingBtn, exitBtn;
-    private SearchView searchView;
+    //private SearchView searchView;
     private int fgNum, itemCount, usingPosition, lastOnPausePage;
     private long firstTime, secondTime;
     private Switch switchBtn;
@@ -98,11 +98,14 @@ public class TestActivity extends AppCompatActivity implements FgSendDataToAct {
         Toast.makeText(this, string,Toast.LENGTH_SHORT).show();
     }
     @Override
-    public void sendSingleList(List<Integer> singleList) {
+    public void sendSingleList(List<Integer> singleList, String string) {
         this.singleList = singleList;
-        Log.d(TAG, "sendSingleList: ");
         showFragment(fgList.get(4));
         //setListView();
+    }
+
+    @Override
+    public void sendPlaylistClickPosition(int position) {
     }
 
     @Override
@@ -237,7 +240,7 @@ public class TestActivity extends AppCompatActivity implements FgSendDataToAct {
         startOrPause = findViewById(R.id.startOrPause_fg);
         nextSong = findViewById(R.id.nextSong_fg);
         order = findViewById(R.id.order_fg);
-        searchView=findViewById(R.id.searchView_fg);
+        //searchView=findViewById(R.id.searchView_fg);
         switchBtn= findViewById(R.id.switchBtn);
         exitBtn =findViewById(R.id.exit);
         spinnerForFgList_sameString= findViewById(R.id.spinnerForFgList);
@@ -300,7 +303,7 @@ public class TestActivity extends AppCompatActivity implements FgSendDataToAct {
         switch (whichActivity){
             case Data.MainActivity:  intent =new Intent(TestActivity.this, MainActivity.class);break;
             case Data.PlayerActivity:  intent =new Intent(TestActivity.this, PlayerActivity.class);break;
-            case Data.FragmentActivity: intent =new Intent(TestActivity.this, FragmentActivity.class);break;
+            case Data.VpFragmentActivity: intent =new Intent(TestActivity.this, VpFragmentActivity.class);break;
             default:break;
         }
         intent.putExtra("itemCount", itemCount);
@@ -348,19 +351,6 @@ public class TestActivity extends AppCompatActivity implements FgSendDataToAct {
             @Override
             public void onClick(View v) { player.change_Order_Mode();order.setText(Data.Order_Mode.get(player.order_Mode)); }
         });
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                player.findSongWithTitle(query);
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                //player.findSongWithTitle(newText);
-                return false;
-            }
-        });
         playerPic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -380,7 +370,6 @@ public class TestActivity extends AppCompatActivity implements FgSendDataToAct {
         switchBtn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                Log.d(TAG, ".\nfm.getFragments(): " + fm.getFragments() +"    fm.getBackStackEntryCount():  "+fm.getBackStackEntryCount());
                 //addFg(fgList.get(3),fgListString.get(3));
                 setListView();
             }
@@ -549,7 +538,7 @@ public class TestActivity extends AppCompatActivity implements FgSendDataToAct {
                         handler.removeCallbacksAndMessages(null);
 //                        initFragment();
 //                        fragmentTransaction();
-                        Log.d(TAG, ".\ngetBackStackEntryCount: "+fm.getBackStackEntryCount()+"  getFragments "+fm.getFragments().size());
+
                         initOnClick();
                         infoUpdate();
                         //initAdapter();

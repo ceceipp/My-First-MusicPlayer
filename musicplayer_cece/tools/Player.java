@@ -1,25 +1,32 @@
 package com.lc.musicplayer.tools;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicBlur;
 import android.util.Log;
+import android.widget.ListView;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
-import com.lc.musicplayer.service.MusicService;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -49,6 +56,7 @@ public  class   Player {
     private List<Boolean> songIsSelectedList;
     private List<Integer> sameStringSingleList;
 
+
     public Player(){
         usingPosition=0;
         usingPositionId=0;
@@ -58,7 +66,6 @@ public  class   Player {
      * @param songs 就是输入的原始歌单(一定是全部歌曲的歌单,
      *              喜爱歌曲的歌单是要根据这个原始歌单来映射的)
      * **/
-
     public Player(List<Song> songs){
         if (songs==null){
             int i =0;
@@ -67,6 +74,9 @@ public  class   Player {
             usingPositionId = 0;
             musicInfoNeedUpdate=true;
         }
+        else if (songs.isEmpty()){
+            return;
+        }
         else {
             int i =0;
             this.songs=songs;
@@ -74,19 +84,42 @@ public  class   Player {
                 usingPositionList.add(i,i);
             //playSong(songs.get(usingPositionList.get(usingPosition)).getPath());
             oriUsingPositionList = usingPositionList;
-            if (usingPositionList.size()-10>=0){
-                playSong(songs.get(usingPositionList.size()-10).getPath());
-                usingPositionId = usingPositionList.size()-10;
-            }
-            else {
-                playSong(songs.get(0).getPath());
-                usingPositionId =0;
-            }
+            playSong(songs.get(0).getPath());
+            usingPosition=0;
+            usingPositionId =0;
             mediaPlayer.pause();
             musicInfoNeedUpdate=true;
         }
     }
-
+    //没人用这个方法
+    public Player(List<Song> songs, List<Integer> savedLastList, int savedLastPosition,int progressMSec){
+        if (songs==null){
+            int i =0;
+            this.songs=new ArrayList<>();
+            oriUsingPositionList = usingPositionList;
+            usingPosition = 0;
+            usingPositionId = 0;
+            musicInfoNeedUpdate=true;
+        }
+        else if (songs!=null&&savedLastList!=null){
+            int i =0;
+            this.songs=songs;
+            this.usingPositionList =savedLastList;
+            oriUsingPositionList = usingPositionList;
+            this.usingPosition = savedLastPosition;
+            if (this.usingPosition < this.usingPositionList.size()){
+                playSong(songs.get(this.usingPositionList.get( this.usingPosition)).getPath());
+            }
+            else {
+                this.usingPosition = 0;
+                playSong(songs.get(usingPositionList.get(0)).getPath());
+            }
+            mediaPlayer.pause();
+            musicInfoNeedUpdate=true;
+            if (progressMSec<=songs.get(this.usingPositionList.get(this.usingPosition)).getDurationMsec())
+                seekTo(progressMSec);
+        }
+    }
     public void playSong(String path){
         if (path==null){
             //nextSong();
@@ -94,6 +127,13 @@ public  class   Player {
         }
         if (usingPosition<0)
             mediaPlayer.stop();
+        //这个if是为了playbackQueue加的, 出错了先删掉他哈哈哈,
+        // 如果不加cache.isEmpty判断, 则在第一次进入player会把当前usingList设置成空的list
+//        if (playbackQueue.isEmpty()&&!cacheUsingPositionList.isEmpty()){
+//            usingPositionList = cacheUsingPositionList;
+//            usingPosition = cacheUsingPosition;
+//            cacheUsingPositionList.clear();
+//        }
         try{
             mediaPlayer.reset();
             mediaPlayer.setDataSource(path);
@@ -118,7 +158,28 @@ public  class   Player {
             }
         });
         musicInfoNeedUpdate=true;
+        //这个if也是为了playbackQueue加的, 出错了先删掉他哈哈哈
+//        if (!playbackQueue.isEmpty()){
+//            playbackQueue.remove(0);
+//            usingPosition = -1;
+//        }
     }
+    //这个cacheBeforePlaybackQueue()也是为了playbackQueue加的, 出错了先删掉他哈哈哈
+//    public void cacheBeforePlaybackQueue(){
+//        cacheUsingPositionList = usingPositionList;
+//        cacheUsingPosition = usingPosition;
+//    }
+    //这个 setPlaybackQueue()也是为了playbackQueue加的, 出错了先删掉他哈哈哈
+//    public void setPlaybackQueue(List<Integer> playbackQueue){
+//        this.playbackQueue = playbackQueue;
+//        usingPositionList = playbackQueue;
+//        usingPosition = -1;
+//    }
+    // 这个 addToPlaybackQueue()也是为了playbackQueue加的, 出错了先删掉他哈哈哈
+//    public void addToPlaybackQueue(int oriSongListId){
+//        playbackQueue.add(oriSongListId);
+//        setPlaybackQueue(this.playbackQueue);
+//    }
 
     public void startOrPause(){
         if (mediaPlayer.isPlaying()) {
@@ -240,6 +301,14 @@ public  class   Player {
         num = random.nextInt(num);
         return num;
     }
+    public int getUsingPosition() {
+        return usingPosition;
+    }
+    public int getCurrentMSec(){
+        if (mediaPlayer!=null)
+            return mediaPlayer.getCurrentPosition();
+        return 0;
+    }
     public void setUsingPositionList(List<Integer> usingPositionList) {
         oriUsingPositionList = usingPositionList;
 //        if (order_Mode==Data.Order_Shuffle_Playlist)
@@ -252,8 +321,9 @@ public  class   Player {
     public int getUsingPositionId() {
         //return usingPositionList.get(usingPosition);
         //如果歌曲的ID改变了, 就不能用此方法了
-        if (usingPosition>=usingPositionList.size())
-            return 1;
+        if (usingPosition>=usingPositionList.size()){
+            return 0;
+        }
         return usingPositionId;
     }
     /**
@@ -263,9 +333,19 @@ public  class   Player {
      * 但是UI还是原来的UI, 所以这个firstClickListItem函数我打算
      * 写多一个方法相同但加多一个参数的函数, 加的参数就是歌曲列表的参数
      * playSong(songs.get( clickSongPosition).getPath());
+     * ==============================================================
+     * if (songs==null||songs.isEmpty()||usingPositionList.isEmpty())
+     *             return;
+     *             是后来加的, 加的时候已经快完成这个作品了, 但是却发现没有好好考虑当一首歌都没有的情况,
+     *             这给了我启发, 以后写的时候, 不要一上来就以常态来写程序, 而是一上来就要以程序处于
+     *             极端情况的时候来写程序, 这样做就不用再在一大堆现成的程序中思考极端情况,
+     *             遇到极端情况也更容易发现和处理(因为这个时候程序还很小, 耦合性很低, 容易处理)
+     *
      * **/
-    public void firstClickListItem(int clickSongPosition){
-        setUsingPositionId(clickSongPosition);
+    public void firstClickListItem(int clickSongId){
+        setUsingPositionId(clickSongId);
+        if (songs==null||songs.isEmpty()||usingPositionList.isEmpty())
+            return;
         playSong(songs.get(usingPositionList.get(usingPosition)).getPath());
     }
     public void firstTapFromList(int clickSongPosition, List<Integer> list){
@@ -278,15 +358,15 @@ public  class   Player {
      * 出现Id为1000的歌曲, 原来的曲单index为4, 新曲单长度为3,那么就会导致换成了新曲单后set1000,
      * 然后index得到4, 但是曲单只有3, 内存溢出
      **/
-    public void setUsingPositionId(int usingPosition) {
-        if (usingPosition<0) {
+    public void setUsingPositionId(int songId) {
+        if (songId<0) {
             this.usingPosition = usingPositionList.size() - 1;
             Toast.makeText(MyApplication.getContext(),
                     "No this song at playlist queue. <0 ",Toast.LENGTH_SHORT).show();
         }
         else{
-            if ( usingPositionList.contains(usingPosition) )
-                this.usingPosition=usingPositionList.indexOf(usingPosition);
+            if ( usingPositionList.contains(songId) )
+                this.usingPosition=usingPositionList.indexOf(songId);
             else {
                 this.usingPosition = usingPositionList.size() - 1;
                 Toast.makeText(MyApplication.getContext(),
@@ -299,7 +379,7 @@ public  class   Player {
     }
     public List<Song> getSongs(){return this.songs;}
 
-    public  static int fileFormatdDetect(String string){
+    public  static int fileFormatDetect(String string){
         Map<String, Integer> map = new HashMap<>();
         map.put(".mp3", R.drawable.mp3);
         map.put(".wav",R.drawable.wav);
@@ -316,18 +396,21 @@ public  class   Player {
     public  void findSongWithTitle(String string){
     for (int i=0;i<songs.size();i++){
         if(songs.get(i).getSong().contains(string)) {
-            firstClickListItem(i);
-            break;
+            if (usingPositionList.contains(songs.get(i).getId()))
+                firstClickListItem(songs.get(i).getId());
+            else
+                Toast.makeText(MyApplication.getContext(),"当前歌曲不在此播放歌单中",Toast.LENGTH_SHORT).show();
+            return;
         }
-        else {}
     }
     Toast.makeText(MyApplication.getContext(),
-            "No this search", Toast.LENGTH_SHORT).show();
+                "全部歌曲标题均不包含搜索的字段", Toast.LENGTH_SHORT).show();
 }
 
 /**
  * 为了提高复用性, 下列4个方法特意做成相似的样子, 以便搭配Adatper, 而且经过多次改良,
  * 这几个方法是始祖方法的1/5耗时哈哈哈
+ * 简单检查了一下, 下面四个均可以得到一个isEmpty的数组. 所以基本不太担心一首歌都没有的手机
  * **/
     public static List<SameStringIdList> idToSameAlbumConvert(List<Song> songList){
         Set<String> stringSet =new android.support.v4.util.ArraySet<>();
@@ -429,16 +512,19 @@ public  class   Player {
         }
         Set<String> pathSet = new android.support.v4.util.ArraySet<>(arrayList);
     }
-    public static String allDurationTime( List<SameStringIdList> sameList,int position,List<Song> oriList){
-        int timeMsec = 0;
-        for (int i=0; i < sameList.get(position).getList().size(); i++  ){
-            timeMsec = timeMsec  +
-                    oriList.get( (int) (sameList.get(position).getList().get(i))  ).getDurationMsec();
+
+    public static String allDurationTime( List<Integer> singleList,List<Song> oriList){
+        long timeMSec = 0;
+        for (int i=0; i < singleList.size(); i++  ){
+            timeMSec = timeMSec  +
+                    oriList.get(  (singleList.get(i))  ).getDurationMsec();
         }
-        return AudioUtils.formatTime(timeMsec);
+        return AudioUtils.formatLongTime(timeMSec);
     }
     public static List<Song> singleListToSongList(List<Integer> singleList, List<Song> fullSongList){
         List<Song> songList = new ArrayList<>();
+        if (singleList==null||singleList.isEmpty()||fullSongList==null||fullSongList.isEmpty())
+            return songList;
         for (int i=0;i<singleList.size();i++) {
             songList.add(fullSongList.get( singleList.get(i) ));
         }
@@ -490,7 +576,7 @@ public  class   Player {
 //            bitmap = BitmapFactory.decodeResource(
 //                    MyApplication.getContext().getResources(), R.drawable.nonepic2);
             bitmap = BitmapFactory.decodeResource(
-                    MyApplication.getContext().getResources(), Player.fileFormatdDetect(musicFilePath));
+                    MyApplication.getContext().getResources(), Player.fileFormatDetect(musicFilePath));
         }
         return bitmap;
         //return compressImage(bitmap,100);
@@ -549,6 +635,44 @@ public  class   Player {
         return list;
     }
 
+    public void addSongIdToPlaybackQueue(int id){
+        if (usingPositionList.contains(id)){
+            int index = usingPositionList.indexOf(id);
+            if ((usingPosition+1)<usingPositionList.size()){
+                int cacheId = usingPositionList.get(usingPosition+1);
+                usingPositionList.set(usingPosition+1, id);
+                usingPositionList.set(index, cacheId);
+            }
+            //如果刚好光标在最后一首歌
+            else {
+                int cacheId = usingPositionList.get(0);
+                usingPositionList.set(0, id);
+                usingPositionList.set(index, cacheId);
+            }
+        }
+        else {
+            usingPositionList.add(usingPosition+1,id);
+        }
+    }
+    public void addSongIdListToPlaybackQueue(List<Integer> addList){
+        if (addList == null || addList.isEmpty()) {
+            Toast.makeText(MyApplication.getContext(), "没有可加歌曲.", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            for (int i=0;i<addList.size();i++){
+                Iterator<Integer> it = usingPositionList.iterator();
+                while (it.hasNext()){
+                    int num = it.next();
+                    if (addList.get(i)==num){
+                        it.remove();
+                        break;
+                    }
+                }
+            }
+            int cacheUsingPosition = usingPositionList.indexOf(usingPositionId);
+            usingPositionList.addAll(cacheUsingPosition+1 , addList);
+        }
+    }
     public static List<Integer> getRandomList(int num, List<Integer> oriList){
         //1.获取scope范围内的所有数值，并存到数组中
         int[] randomArray=new int[num];
@@ -620,7 +744,9 @@ public  class   Player {
         else
             return true;
     }
-    /**用来检查歌曲是否有专辑图片, 有则setAlbumPicExist=true, 无则setAlbumPicExist=false, 顺便把id也设成0
+    /**
+     * @deprecated  使用 {@link #initAlbumPicBackground(List)}
+     * 用来检查歌曲是否有专辑图片, 有则setAlbumPicExist=true, 无则setAlbumPicExist=false, 顺便把id也设成0
      * 但是这个方法不好, 所以不用, 而且后来检查发现这个方法逻辑写反了**/
     public static void initAlbumId(List<Song> songList){
         MediaMetadataRetriever mediaMetadataRetriever =new MediaMetadataRetriever();
@@ -633,8 +759,11 @@ public  class   Player {
             }
         }
     }
-    /**用来检查歌曲是否有专辑图片, 有则setAlbumPicExist=true, 无则setAlbumPicExist=false, 顺便把id也设成0
-     * 这个是能用的**/
+
+    /**
+     * @deprecated
+     * 用来检查歌曲是否有专辑图片, 有则setAlbumPicExist=true, 无则setAlbumPicExist=false, 顺便把id也设成0
+     * 这个是能用的, 但现在弃用**/
     public static void initAlbumId2(List<Song> songList){
         MediaMetadataRetriever mediaMetadataRetriever =new MediaMetadataRetriever();
         for (int i=0;i<songList.size();i++){
@@ -648,7 +777,11 @@ public  class   Player {
 
         }
     }
-/**这个方法根据id来判断专辑图片, 不够完美,弃用**/
+
+/**
+ * @deprecated
+ * * 这个方法根据id来判断专辑图片, 不够完美,弃用
+ * **/
     public static void initPicCache(List<Song> songList){
         Bitmap bitmap ;
         for (int i=0;i<songList.size();i++){
@@ -658,7 +791,10 @@ public  class   Player {
             }
         }
     }
-    /**这个方法根据id和exist来判断专辑图片, 完美,启用**/
+    /**
+     * @deprecated
+     * 这个方法根据id和exist来判断专辑图片, 完美,启用
+     * 不对, 这个逻辑稍微混乱, 暂时弃用**/
     public static void initPicCache2(List<Song> songList){
         Bitmap bitmap ;
         for (int i=0;i<songList.size();i++){
@@ -668,7 +804,10 @@ public  class   Player {
             }
         }
     }
-    /**弃用了**/
+    /**
+     * @deprecated  使用 {@link #initAlbumPicBackground(List)}
+     * 弃用了
+     * **/
     public static void  initAlbumPicCache(final List<Song> songList){
         final List<Song> songList_final =songList;
         if (checkEverInitPicCacheIsEmpty()){
@@ -682,7 +821,9 @@ public  class   Player {
             thread.start();
         }
     }
-/**自己写的压缩图片方法, 粗暴简单, 但是因为只有整数运算, 不可避免的把一部分内容去掉了, 不用了**/
+/**
+ * @deprecated  使用 {@link #bitmapTo128N(Bitmap)}
+ * 自己写的压缩图片方法, 粗暴简单, 但是因为只有整数运算, 不可避免的把一部分内容去掉了, 不用了**/
     public static Bitmap bitmapTo128(Bitmap bitmap1){
         int width, height, ratio;
         ratio= bitmap1.getHeight()<bitmap1.getWidth()? bitmap1.getHeight()/128: bitmap1.getWidth()/128;
@@ -712,6 +853,8 @@ public  class   Player {
     }
 
 /**
+ * @deprecated  使用 {@link #initAlbumPicBackground(List)}
+ * * (这个用了很久都没问题, 但我还是决定换成另一种方式, 所以可能之后的adapter不适应下面的方法了)
  * 先把所有歌曲都检测一遍, 有专辑封面的设置成true, 没有的设置成false
  * 然后再根据true和false来判断需不需要缓存专辑封面
  * 然后根据是否存在AlbumID来把sameAlbumList中第一个albumIdExist为true的song的albumID提取出来
@@ -742,6 +885,39 @@ public  class   Player {
             }
         }).start();
     }
+
+    /**
+     * 此方法只检查有没有专辑封面, 有则true, 无则false, 而且保留原有的albumId, albumId对应缓存的Id,
+     * 此方法有质量好的专辑封面可能会被同名专辑的质量差的专辑图片给覆盖掉, 但现在优先用这个方法, 因为逻辑简单
+     * **/
+
+    public static void initAlbumPicBackground(final List<Song> songList){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap bitmap ;
+                byte[] picture;
+                MediaMetadataRetriever mediaMetadataRetriever =new MediaMetadataRetriever();
+                for (int i=0;i<songList.size();i++){
+                    mediaMetadataRetriever.setDataSource(songList.get(i).getPath());
+                    if (mediaMetadataRetriever.getEmbeddedPicture()!=null) {
+                        songList.get(i).setAlbumPicExist(true);
+                        picture = mediaMetadataRetriever.getEmbeddedPicture();
+                        bitmap = BitmapFactory.decodeByteArray(picture, 0, picture.length);
+                        bitmap = bitmapTo128N(bitmap);
+                        Saver.setLocalCachePath(" "+songList.get(i).getAlbum_Picture_Id(), bitmap, 100);
+                    }
+                    else{
+                        songList.get(i).setAlbumPicExist(false);
+                    }
+                }
+                Saver.exchangeSongList("firstList", songList);
+            }
+        }).start();
+    }
+
+
+
     public static List<SameStringIdList> initDefaultPlaylist(List<Song> oriSongList,List<SameStringIdList> playlists ){
         if (playlists==null)
             playlists=new ArrayList<>();
@@ -764,6 +940,174 @@ public  class   Player {
         return playlists;
     }
 
+    public static  Bitmap blur(Bitmap oriBitmap){
+        if (oriBitmap == null)
+            return null;
+        Bitmap bitmap = Bitmap.createBitmap(oriBitmap.getWidth(), oriBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        RenderScript rs = RenderScript.create(MyApplication.getContext());
+        ScriptIntrinsicBlur blurScript = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
+        Allocation allocationIn = Allocation.createFromBitmap(rs,oriBitmap);
+        Allocation allocationOut = Allocation.createFromBitmap(rs, oriBitmap);
+        blurScript.setRadius(25.0f);
+        blurScript.setInput(allocationIn);
+        blurScript.forEach(allocationOut);
+        allocationOut.copyTo(bitmap);
+        //回收原来的空间
+        oriBitmap.recycle();
+        rs.destroy();
+        return bitmap;
+    }
+
+    public static boolean stringDetect(String string){
+        //String regEx = "[\\S]{1,20}";
+        String regEx= "[^\\n\\f\\r\\v]{1,20}";
+        return string.matches(regEx);
+    }
+
+    /***
+     *
+     * @param newFavListName 是新歌单的名字
+     * @param newFavList 是新歌单的IdList
+     * @param dataFileName 是本地总歌单playlist的文件名.
+     *
+     * 若新建歌单的名字本来就有, 那就会直接覆盖旧歌单, 这里以后再改成加入到旧歌单
+     * */
+    public static  void SaveNewFavListInDataFile(Context context, String newFavListName, List<Integer> newFavList, String dataFileName){
+        if (newFavListName==null||newFavListName.isEmpty()||newFavList==null||newFavList.isEmpty()||dataFileName
+                ==null||dataFileName.isEmpty())         return;
+        //这里要做个字符检测, 不能输入非法字符
+        if (!Player.stringDetect(newFavListName)) return;
+        else {
+            List<SameStringIdList> oriPlaylist = (List<SameStringIdList>) Saver.readData(dataFileName);
+            if (oriPlaylist!=null && !oriPlaylist.isEmpty()){
+                for (int i=0;i< oriPlaylist.size();i++){
+                    if (newFavListName.equals(oriPlaylist.get(i).getSameString())){
+                        int indexOfFavListNameInPlaylist= i;
+                        oriPlaylist.set(indexOfFavListNameInPlaylist, new SameStringIdList(newFavListName, (ArrayList) newFavList));
+                        Saver.saveData(dataFileName, oriPlaylist, false);
+                        Toast.makeText(context,  "已存在此歌单, 新歌单将覆盖旧歌单: "+newFavListName,Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                }//后期可以加上一下功能:
+                // 如果循环做完了都找不到这个列表, 则新建一个列表
+                Toast.makeText(context,  "没有找到相应的歌单, 将新建歌单: "+newFavListName,Toast.LENGTH_SHORT).show();
+                oriPlaylist.add(new SameStringIdList(newFavListName, (ArrayList) newFavList));
+                Saver.saveData(dataFileName, oriPlaylist, false);
+            }
+        }
+    }
+    /***
+     * @param selectList 是选中的要加入playlist的SongIdList
+     * @param oriFavList 被加入的SongIdList, 就是说
+     *                   把selectList加入到oriFavList
+     *                   返回一个加入的oriFavList
+     * */
+
+    public static List<Integer> theListWhichAddSelectSongIdInNewPlaylist(
+            List<Integer> selectList, List<Integer> oriFavList){
+        if (selectList==null||selectList.isEmpty()||oriFavList==null)
+            return null;
+        oriFavList.addAll(selectList);
+        return oriFavList;
+    }
+
+    public static List<Integer> getInverselySelectList(Context context,List<Integer> selectList, List<Integer> currentEditList){
+        if (selectList==null||currentEditList==null||currentEditList.isEmpty()){
+            Toast.makeText(context, "selectList null || currentEditList null isEmpty", Toast.LENGTH_SHORT).show();
+            return null;
+        }
+        if (selectList.isEmpty()){
+            return currentEditList ;
+        }
+        List<Integer> oriPlaylistQueueIdList = new ArrayList<>();
+        for (int i=0; i<currentEditList.size();i++)
+            oriPlaylistQueueIdList.add(currentEditList.get(i));
+        for (int i=0; i<selectList.size(); i++){
+            if (oriPlaylistQueueIdList.contains(selectList.get(i))){
+                oriPlaylistQueueIdList.remove(selectList.get(i));
+            }
+        }
+        return oriPlaylistQueueIdList;
+    }
+
+    public static void setInverselySelect(List<Integer> currentEditList, List<Integer> selectList
+            , ListView listView, TextView tvListMode, EditPageAdapter adapter ){
+        if (listView==null||selectList==null)
+            return;
+        List<Integer> trueList = new ArrayList<>();
+        for (int j=0;j<listView.getCheckedItemPositions().size();j++)
+            if (listView.getCheckedItemPositions().get(listView.getCheckedItemPositions().keyAt(j)))
+                trueList.add( listView.getCheckedItemPositions().keyAt(j) );
+        for (int j = 0; j<currentEditList.size(); j++){
+            listView.setItemChecked(j, true);
+        }
+        for (int k = 0; k< trueList.size(); k++){
+            listView.setItemChecked(trueList.get(k), false);
+        }
+        tvListMode.setText((currentEditList.size()- selectList.size())+"/"+currentEditList.size());
+        adapter.notifyDataSetChanged();
+    }
+
+    public static List<Integer> getSelectSongIdList(ListView listView,List<Integer> currentEditList, List<Song> song_list){
+        List<Integer> mSelectList = new ArrayList<>();
+        if (listView==null)
+            return null;
+        if (currentEditList==null||currentEditList.isEmpty())
+            return mSelectList;
+        if (listView.getCheckedItemPositions()==null || listView.getCheckedItemPositions().size()==0)
+            return mSelectList;
+        for (int j=0;j<listView.getCheckedItemPositions().size();j++)
+            if (listView.getCheckedItemPositions().get(listView.getCheckedItemPositions().keyAt(j)))
+                //mSelectList.add(   playlistQueue.get(listView.getCheckedItemPositions().keyAt(j)).getId()   );
+                mSelectList.add(  song_list.get(currentEditList.get(listView.getCheckedItemPositions().keyAt(j))).getId()   );
+
+        if (mSelectList.isEmpty()){
+            return mSelectList;
+        }
+        else{
+            return mSelectList;
+        }
+    }
+
+    public static void exchangeFromPlayList(int whichPositionFromPlaylist, List<Integer> newCurrentEditList){
+        List<SameStringIdList> newList =(List<SameStringIdList>) Saver.readData("playlist");
+        String playlistName = newList.get(whichPositionFromPlaylist).getSameString();
+        SameStringIdList newSingleList = new SameStringIdList(playlistName, (ArrayList) newCurrentEditList);
+        newList.set(whichPositionFromPlaylist, newSingleList );
+        Saver.saveData("playlist", newList, false);
+    }
+
+
+    public static List<SameStringIdList> getSearchResultListFromOriListSongTitle(String string, List<Song> songList){
+        List<SameStringIdList> resultList = new ArrayList<>();
+        for (int i=0; i<songList.size(); i++){
+            if (songList.get(i).getSong().contains(string)){
+                ArrayList<Integer> resultIdList = new ArrayList<>();
+                resultIdList.add(i);
+                resultList.add(new SameStringIdList(songList.get(i).getSong(), resultIdList));
+            }
+        }
+        return resultList;
+    }
+
+    public static List<SameStringIdList> getSearchResultListFromOriListAlbum(String string, List<SameStringIdList> albumIdLists){
+        List<SameStringIdList> resultList = new ArrayList<>();
+        for (int i=0; i<albumIdLists.size(); i++){
+            if (albumIdLists.get(i).getSameString().contains(string)){
+                resultList.add(new SameStringIdList(albumIdLists.get(i).getSameString(), albumIdLists.get(i).getList()));
+            }
+        }
+        return resultList;
+    }
+    public static List<SameStringIdList> getSearchResultListFromOriListSinger(String string, List<SameStringIdList> singerIdLists){
+        List<SameStringIdList> resultList = new ArrayList<>();
+        for (int i=0; i<singerIdLists.size(); i++){
+            if (singerIdLists.get(i).getSameString().contains(string)){
+                resultList.add(new SameStringIdList(singerIdLists.get(i).getSameString(), singerIdLists.get(i).getList()));
+            }
+        }
+        return resultList;
+    }
 }
 
 /***

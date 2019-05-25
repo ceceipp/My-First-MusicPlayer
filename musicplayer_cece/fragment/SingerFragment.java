@@ -9,12 +9,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
-import com.lc.musicplayer.FragmentActivity;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
-import com.lc.musicplayer.tools.AudioUtils;
 import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.ListAdapter_Fragment;
 import com.lc.musicplayer.tools.Player;
@@ -22,6 +20,7 @@ import com.lc.musicplayer.tools.SameStringIdList;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SingerFragment extends Fragment {
@@ -30,13 +29,13 @@ public class SingerFragment extends Fragment {
 
     private View view;
     private ListView listView;
-    private FragmentActivity mActivity;
+    private VpFragmentActivity mActivity;
     private List<Integer> singleList;
 
     @Override
     public void onAttach(Context context){
         super.onAttach(context);
-        mActivity = (FragmentActivity) context;
+        mActivity = (VpFragmentActivity) context;
         oriSongList=mActivity.getOriSongList();
 //        if (oriSongList==null)
 //            oriSongList=(List<Song>) Saver.readSongList("firstList");
@@ -49,6 +48,7 @@ public class SingerFragment extends Fragment {
         oriSongList=mActivity.getOriSongList();
         if (oriSongList==null)
             oriSongList=(List<Song>) Saver.readSongList("firstList");
+        if (oriSongList==null) oriSongList = new ArrayList<>();
         sameSingerList = Player.idToSameSingerConvert(oriSongList);
         view = inflater.inflate(R.layout.singerlist_layout, container, false);
 

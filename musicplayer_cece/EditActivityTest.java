@@ -3,50 +3,33 @@ package com.lc.musicplayer;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
-
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.lc.musicplayer.MainFragment.MainPlaylistFg;
 import com.lc.musicplayer.service.MusicService;
 import com.lc.musicplayer.tools.Data;
-import com.lc.musicplayer.tools.Listview_Adapter;
+import com.lc.musicplayer.test.EditActivityTestAdapter;
 import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
-
-import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
-//    /**
-//    * 我发现了一个大坑, infoUpdate ,这个ACT是先onCreate的infoupdate执行完,
-//    * 再onCreateService, 再返回这个ACT的ServiceConnection
-//    * 执行onServiceConnected的player=myBinder.getPlayer();
-//    * 这导致了Act中onCreate的infoupdate的player还没获得Service的player
-//    * 就开始update信息了, 这导致了找不到player导致闪退
-//    * 有两个方法解决, 一个是判断player是否为null, 另一个我比较喜欢, 那就是
-//    * 再Service的player声明static, 我试过了, 声明之后MainActivity中赋值的player
-//    * 就是MusicService的player, 但是这有个不好的地方, 那就是Service的player要public.
-//    * 我也打算尝试一下static songlist
-//                                  现在也吧player弄成private了...也可以了, 因为handler里处理了
-//    *
-//    *
-//    * */
-public class MainActivity extends AppCompatActivity {
+
+public class EditActivityTest extends AppCompatActivity {
     private TextView songName = null;
     private TextView songSinger = null;
     private TextView duration = null;
@@ -54,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
     private Button startOrPause = null;
     private Button nextSong = null;
     private Button order = null;
+    private Button btnAddToPlaylist, btnAddToPlaybackQueue, btnDeleteSongs, btnInverselySelect ;
+    private TextView tvListMode;
     private ListView listView=null;
     private List<Song> song_list ;
     public int usingPosition;
@@ -62,10 +47,14 @@ public class MainActivity extends AppCompatActivity {
     private Player player;
     private  int itemCount;
     private List<Song> playlistQueue;
-    private Listview_Adapter adapter;
+    private EditActivityTestAdapter adapter;
+    private LinearLayout playerCtrl, ctrlBtn;
+    private boolean modeIsSelect =false;
 
     long firstTime = 0;
     long secondTime = 0;
+
+    private List<Integer> selectList=new ArrayList<>();
 
     private ServiceConnection sc = new ServiceConnection() {
         @Override
@@ -83,6 +72,8 @@ public class MainActivity extends AppCompatActivity {
                 player = myBinder.getPlayer();
             }
             infoUpdate();
+            //for(int i=0;i<player.getUsingPositionList().size();i++)    selectList.add(false);
+
         }
         @Override
         public void onServiceDisconnected(ComponentName name) {}
@@ -92,17 +83,19 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         song_list =(List<Song>) Saver.readSongList("firstList");
-        setContentView(R.layout.list_layout);
+        setContentView(R.layout.edit_page_layout);
         initIntent();
         initService();
         handler.removeCallbacksAndMessages(null);
         handler.sendEmptyMessage(Data.Player_Loading_Msg);
-        init();
-        //initIntent();
+        initFindId();
     }
     @Override
     public void onBackPressed(){
-        intentPackToFragment();
+        if (modeIsSelect==true)
+            doneSelection();
+        else
+            intentPackToFragment();
     }
 //    {
 //        if(firstTime==0){
@@ -125,6 +118,16 @@ public class MainActivity extends AppCompatActivity {
 //        }
 //    }
 
+    public void doneSelection(){
+        if (player!=null)
+            playlistQueue = Player.singleListToSongList(player.getUsingPositionList(), song_list);
+        tvListMode.setVisibility(View.GONE);
+        playerCtrl.setVisibility(View.VISIBLE);
+        ctrlBtn.setVisibility(View.GONE);
+        modeIsSelect = false;
+        adapter.setModeSelect(false);
+        adapter.notifyDataSetChanged();
+    }
     @Override
     protected void onStart(){
         super.onStart();
@@ -163,14 +166,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void initService() {
         usingPosition = getIntent().getIntExtra("usingPosition", -1);
-        Intent startIntent = new Intent(MainActivity.this, MusicService.class);
-        Intent bindIntent = new Intent(MainActivity.this,MusicService.class);
+        Intent startIntent = new Intent(EditActivityTest.this, MusicService.class);
+        Intent bindIntent = new Intent(EditActivityTest.this,MusicService.class);
         bindService(bindIntent,sc,BIND_AUTO_CREATE);
         startService(startIntent);
         usingPosition=0;
     }
-    public void init() {
-        //player = MusicService.player;
+    public void initFindId() {
         songName = findViewById(R.id.songName1);
         songSinger = findViewById(R.id.songSinger1);
         duration = findViewById(R.id.duration1);
@@ -178,14 +180,23 @@ public class MainActivity extends AppCompatActivity {
         startOrPause = findViewById(R.id.startOrPause1);
         nextSong = findViewById(R.id.nextSong1);
         order = findViewById(R.id.order1);
+        playerCtrl = findViewById(R.id.playerCtrl);
+        ctrlBtn = findViewById(R.id.ctrlBtn);
+        btnAddToPlaylist = findViewById(R.id.btnAddToPlaylist);
+        btnAddToPlaybackQueue =findViewById(R.id.btnAddToPlaybackQueue);
+        btnDeleteSongs = findViewById(R.id.btnDeleteSongs);
     }
     public void initListView(){
+        tvListMode=findViewById(R.id.tvListMode);
+        btnInverselySelect = findViewById(R.id.btnInverselySelect);
         listView = findViewById(R.id.list_view);
         listView.setDividerHeight(1);
         playlistQueue = Player.singleListToSongList(player.getUsingPositionList(), song_list);
-        adapter = new Listview_Adapter(MainActivity.this, playlistQueue, R.layout.list_item, player);
+        adapter = new EditActivityTestAdapter(EditActivityTest.this, playlistQueue, R.layout.list_item, player,listView,modeIsSelect);
+        listView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
         listView.setSelection(player.getUsingPositionList().indexOf(player.getUsingPositionId()));
+        tvListMode.setText("多选");
     }
     public void initOnClick(){
         playerPic.setOnClickListener(new View.OnClickListener() {
@@ -213,17 +224,111 @@ public class MainActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick
-                    (AdapterView<?> parent, View view, int position, long id)
-            {  //这里最好设置一下新的歌曲列表
-                //player.setUsingPositionList( Player.getOrderList(song_list.size()));
-                player.firstClickListItem(playlistQueue.get(position).getId());
-//                adapter.notifyDataSetChanged();
-//                adapter.
-//                listView.setAdapter(adapter);
-                //listView.setSelection(player.getUsingPositionList().indexOf(player.getUsingPositionId()));
-                 }
+                    (AdapterView<?> parent, View view, int position, long id) {
+                if (!modeIsSelect){
+                    adapter.notifyDataSetChanged();
+                    listView.setSelection(player.getUsingPosition());
+                    player.firstClickListItem(playlistQueue.get(position).getId());
+                }
+                else {
+                    int i = 0 ;
+                    for (int j=0; j<listView.getCheckedItemPositions().size();j++){
+                        if (listView.getCheckedItemPositions().get(listView.getCheckedItemPositions().keyAt(j)))
+                            i++;
+                    }
+                    tvListMode.setText(i+"/"+playlistQueue.size());
+                    adapter.notifyDataSetChanged();
+                }
+            }
+        });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                modeIsSelect=!modeIsSelect;
+                if (modeIsSelect){
+                    listView.clearChoices();
+                    modeIsSelect =true;
+                    adapter.setModeSelect(true);
+                    tvListMode.setText("0/"+playlistQueue.size());
+                    adapter.notifyDataSetChanged();
+                    tvListMode.setVisibility(View.VISIBLE);
+                    playerCtrl.setVisibility(View.GONE);
+                    ctrlBtn.setVisibility(View.VISIBLE);
+                }
+                return false;
+            }
+        });
+        btnInverselySelect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectList = getSelectSongIdList(listView, playlistQueue);
+//                for (int i=0;i<playlistQueue.size();i++){
+//                    Log.d(TAG, "onClick: "+playlistQueue.get(i).getId());
+//                }
+                setInverselySelect(playlistQueue, selectList, listView, tvListMode, adapter );
+            }
+        });
+        btnAddToPlaylist.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!getSelectSongIdList(listView, playlistQueue).isEmpty()&& getSelectSongIdList(listView, playlistQueue)!=null)
+                    selectList = getSelectSongIdList(listView, playlistQueue);
+                doneSelection();
+            }
+        });
+        btnAddToPlaybackQueue.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                    selectList = getSelectSongIdList(listView,playlistQueue);
+                    player.addSongIdListToPlaybackQueue(selectList);
+                    //playlistQueue = Player.singleListToSongList(player.getUsingPositionList(), song_list);
+                    //adapter = new EditPageAdapter(EditActivityTest.this, playlistQueue, R.layout.list_item, player,listView,modeIsSelect);
+                    doneSelection();
+            }
+        });
+        btnDeleteSongs.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                doneSelection();
+            }
         });
     }
+    public List<Integer> getSelectSongIdList(ListView listView,List<Song> playlistQueue){
+        List<Integer> mSelectList = new ArrayList<>();
+        if (listView==null)
+            return null;
+        if (listView.getCheckedItemPositions()==null || listView.getCheckedItemPositions().size()==0)
+            return mSelectList;
+        for (int j=0;j<listView.getCheckedItemPositions().size();j++)
+            if (listView.getCheckedItemPositions().get(listView.getCheckedItemPositions().keyAt(j)))
+                mSelectList.add(   playlistQueue.get(listView.getCheckedItemPositions().keyAt(j)).getId()   );
+        if (mSelectList.isEmpty()){
+            Toast.makeText(EditActivityTest.this, "没有选中任何歌曲", Toast.LENGTH_SHORT).show();
+            return mSelectList;
+        }
+        else{
+            return mSelectList;
+        }
+    }
+    public void setInverselySelect(List<Song> playlistQueue, List<Integer> selectList
+            , ListView listView, TextView tvListMode, EditActivityTestAdapter adapter ){
+        if (playlistQueue.isEmpty()||listView==null||selectList==null)
+            return;
+        List<Integer> trueList = new ArrayList<>();
+        for (int j=0;j<listView.getCheckedItemPositions().size();j++)
+            if (listView.getCheckedItemPositions().get(listView.getCheckedItemPositions().keyAt(j)))
+                trueList.add( listView.getCheckedItemPositions().keyAt(j) );
+        for (int j = 0; j<playlistQueue.size(); j++){
+            listView.setItemChecked(j, true);
+        }
+        for (int k = 0; k< trueList.size(); k++){
+            listView.setItemChecked(trueList.get(k), false);
+        }
+        tvListMode.setText((playlistQueue.size()- selectList.size())+"/"+playlistQueue.size());
+        adapter.notifyDataSetChanged();
+    }
+
+
     public void infoUpdate() {
         if (song_list==null||song_list.isEmpty())
             return;
@@ -234,13 +339,12 @@ public class MainActivity extends AppCompatActivity {
         order.setText(Data.Order_Mode.get(player.order_Mode));
         startOrPause.setText(player.mediaPlayer.isPlaying() ? "Pause" : "Play");
     }
-
     public void initIntent(){
         itemCount=getIntent().getIntExtra("itemCount",0);
-       // listView.setSelection(itemCount);
+        // listView.setSelection(itemCount);
     }
     public void intentPack(){
-        Intent intent = new Intent(MainActivity.this,PlayerActivity.class);
+        Intent intent = new Intent(EditActivityTest.this,PlayerActivity.class);
         itemCount = listView.getFirstVisiblePosition();
         intent.putExtra("itemCount",itemCount);
         if (getIntent().getSerializableExtra("objectList")!=null)
@@ -249,7 +353,7 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
     public void intentPackToFragment(){
-        Intent intent = new Intent(MainActivity.this,MainFragmentActivity.class);
+        Intent intent = new Intent(EditActivityTest.this,MainFragmentActivity.class);
         itemCount = listView.getFirstVisiblePosition();
         unbindService(sc);
         intent.putExtra("itemCount",itemCount);
@@ -288,10 +392,9 @@ public class MainActivity extends AppCompatActivity {
                 }
                 case Data.MainActivityInfoUpdate:{
                     if (player.musicInfoNeedUpdate) {
-                        //listView.setAdapter(adapter);
-                        adapter.notifyDataSetChanged();
                         listView.setSelection(player.getUsingPositionList().indexOf(player.getUsingPositionId()));
                         infoUpdate();
+                        adapter.notifyDataSetChanged();
                         player.musicInfoNeedUpdate=false;
                     }
                     msg=obtainMessage(Data.MainActivityInfoUpdate);
@@ -301,8 +404,5 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
 }
-
-
-
-

@@ -1,10 +1,6 @@
 package com.lc.musicplayer.tools;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.MediaMetadataRetriever;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,16 +8,10 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+
 public class ListAdapter_Fragment extends BaseAdapter {
     private Context context ;
     private int mResId = 0;
@@ -37,17 +27,26 @@ public class ListAdapter_Fragment extends BaseAdapter {
         this.oriList=oriList;
     }
 
+    public void setSameList(List<SameStringIdList> sameList) {
+        this.sameList = sameList;
+    }
 
     @Override
     public int getCount() {
+        if (sameList==null||sameList.isEmpty())
+            return 0;
         return sameList.size();
     }
     @Override
     public Object getItem(int position) {
+        if (sameList==null||sameList.isEmpty())
+            return null;
         return sameList.get(position);
     }
     @Override
     public long getItemId(int position) {
+        if (sameList==null||sameList.isEmpty())
+            return 0;
         return position;
     }
     @Override
@@ -67,7 +66,7 @@ public class ListAdapter_Fragment extends BaseAdapter {
         else 
             holder = (ViewHolder)convertView.getTag();
 
-        holder.sameString.setText(sameList.get(position).getString());
+        holder.sameString.setText(sameList.get(position).getSameString());
         holder.songsCount.setText( sameList.get(position).getList().size()+" songs");
 
         if (whatList!=Data.SameSingerList){
@@ -83,19 +82,19 @@ public class ListAdapter_Fragment extends BaseAdapter {
             //Singer为sameString时, singer.setText应该显示album而不是singer
             holder.singer.setText(  oriList.get( sameList.get(position).getStringOfSongId() ).getAlbum() );
 
-        holder.allDuration.setText( Player.allDurationTime(sameList,position,oriList) );
+        holder.allDuration.setText( Player.allDurationTime(sameList.get(position).getList(), oriList) );
 
         for (int i=0;i<sameList.get(position).getList().size();i++){
-            if (  oriList.get(  (int)sameList.get(position).getList().get(i)  ).isAlbumPicExist  ){
+            if (  oriList.get(  (int)sameList.get(position).getList().get(i)  ).getIsAlbumPicExist()  ){
                 holder.album_Picture_Id.setImageBitmap(Saver.getLocalCache(" "+  oriList.get(  (int)sameList.get(position).getList().get(i)  ).getAlbum_Picture_Id()  ));
                 break;
             }
             if (i==(sameList.get(position).getList().size()-1))
-                holder.album_Picture_Id.setImageResource(  Player.fileFormatdDetect(  oriList.get((int) sameList.get(position).getStringOfSongId()).getPath()  )  );
+                holder.album_Picture_Id.setImageResource(  Player.fileFormatDetect(  oriList.get((int) sameList.get(position).getStringOfSongId()).getPath()  )  );
         }
 //        if (oriList.get( sameList.get(position).getStringOfSongId() ).getAlbum_Picture_Id()==0)
 //            holder.album_Picture_Id.setImageResource(
-//                    Player.fileFormatdDetect(
+//                    Player.fileFormatDetect(
 //                            oriList.get(  (int)(sameList.get(position).getStringOfSongId())  ).getPath()
 //                ));
 //        else {

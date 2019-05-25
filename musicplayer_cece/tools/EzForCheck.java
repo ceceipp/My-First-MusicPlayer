@@ -150,9 +150,9 @@ public class EzForCheck {
 //}
     {
     }//AudioUtils
-//song.setSong( cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)));
-//                song.setSinger( cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)));
-//                song.setPath(cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)));
+//song.setSong( cursor.getSameString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)));
+//                song.setSinger( cursor.getSameString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)));
+//                song.setPath(cursor.getSameString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)));
 //                song.setDuration(formatTime(cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION))));
 //                song.setFileSize( cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)));//
 {}//TestActivity

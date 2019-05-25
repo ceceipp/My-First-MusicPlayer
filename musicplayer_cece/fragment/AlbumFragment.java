@@ -4,19 +4,16 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
-import com.lc.musicplayer.FragmentActivity;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 
 import com.lc.musicplayer.R;
-import com.lc.musicplayer.tools.AudioUtils;
 import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.ListAdapter_Fragment;
 import com.lc.musicplayer.tools.Player;
@@ -24,6 +21,7 @@ import com.lc.musicplayer.tools.SameStringIdList;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AlbumFragment extends Fragment {
@@ -31,13 +29,13 @@ public class AlbumFragment extends Fragment {
     private List<SameStringIdList> sameAlbumList;
     private ListView listView;
     private View view;
-    private FragmentActivity mActivity;
+    private VpFragmentActivity mActivity;
     private List<Integer> singleList;
 
     @Override
     public void onAttach(Context context){
         super.onAttach(context);
-        mActivity = (FragmentActivity) context;
+        mActivity = (VpFragmentActivity) context;
         oriSongList=mActivity.getOriSongList();
 //        if (oriSongList==null)
 //            oriSongList=(List<Song>) Saver.readSongList("firstList");
@@ -51,6 +49,7 @@ public class AlbumFragment extends Fragment {
         oriSongList=mActivity.getOriSongList();
         if (oriSongList==null)
             oriSongList=(List<Song>) Saver.readSongList("firstList");
+        if (oriSongList==null) oriSongList = new ArrayList<>();
         sameAlbumList=Player.idToSameAlbumConvert(oriSongList);
 
         view =inflater.inflate(R.layout.albumlist_layout,container,false);

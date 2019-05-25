@@ -9,13 +9,12 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.lc.musicplayer.FragmentActivity;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
 import com.lc.musicplayer.tools.Data;
 import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.SameStringIdList;
-import com.lc.musicplayer.tools.SameStringSongsFragment_Adapter;
 import com.lc.musicplayer.tools.SameStringSongsFragment_Edit_Adapter;
 import com.lc.musicplayer.tools.Saver;
 import com.lc.musicplayer.tools.Song;
@@ -31,7 +30,7 @@ public class MainSameStringItemEditFg extends Fragment {
 
     private View view;
     private ListView listView;
-    private FragmentActivity mActivity;
+    private VpFragmentActivity mActivity;
     private int testInt=0;
 
     @Override

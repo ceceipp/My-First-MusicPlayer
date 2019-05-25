@@ -1,6 +1,5 @@
 package com.lc.musicplayer.fragment;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -9,15 +8,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
-import com.lc.musicplayer.FragmentActivity;
+import com.lc.musicplayer.VpFragmentActivity;
 import com.lc.musicplayer.MyApplication;
 import com.lc.musicplayer.R;
-import com.lc.musicplayer.service.MusicService;
-import com.lc.musicplayer.tools.AudioUtils;
 import com.lc.musicplayer.tools.Data;
-import com.lc.musicplayer.tools.ListAdapter_Fragment;
 import com.lc.musicplayer.tools.Player;
 import com.lc.musicplayer.tools.SameStringIdList;
 import com.lc.musicplayer.tools.SameStringSongsFragment_Adapter;
@@ -40,7 +35,7 @@ public class SameStringSongsFragment extends Fragment {
     private View view;
     private ListView listView;
 
-    private FragmentActivity mActivity;
+    private VpFragmentActivity mActivity;
     private Player player;
     private int position;
     private SameStringSongsFragment_Adapter sAdapter;
@@ -51,7 +46,7 @@ public class SameStringSongsFragment extends Fragment {
     @Override
     public void onAttach(Context context){
         super.onAttach(context);
-        mActivity = (FragmentActivity) context;
+        mActivity = (VpFragmentActivity) context;
         oriSongList=mActivity.getOriSongList();
         if (oriSongList==null)
             oriSongList=(List<Song>) Saver.readSongList("firstList");

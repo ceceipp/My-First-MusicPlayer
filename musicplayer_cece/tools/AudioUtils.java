@@ -132,7 +132,7 @@ public class  AudioUtils  {
         }
     }
 
-    public static String formatHourTime(long time) {
+    public static String formatLongTime(long time) {
         if (time / 1000 % 60 < 10) {
             return time / 1000 / 60 + ":0" + time / 1000 % 60;
         } else {

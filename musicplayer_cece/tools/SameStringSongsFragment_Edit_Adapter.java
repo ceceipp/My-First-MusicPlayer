@@ -65,12 +65,23 @@ public class SameStringSongsFragment_Edit_Adapter extends BaseAdapter  {
         holder.songSinger.setText(  oriList.get( sameStringSingleList.get(position)).getSinger());
         holder.duration.setText(   oriList.get(  sameStringSingleList.get(position)).getDuration());
 
-        if (  oriList.get(  sameStringSingleList.get(position)).getAlbum_Picture_Id()==0  )
-            holder.playerPic.setImageResource(
-                    Player.fileFormatdDetect(  oriList.get(sameStringSingleList.get(position)).getPath()));
-        else
+//        if (  oriList.get(  sameStringSingleList.get(position)).getAlbum_Picture_Id()==0  )
+//            holder.playerPic.setImageResource(
+//                    Player.fileFormatDetect(  oriList.get(sameStringSingleList.get(position)).getPath()));
+//        else
+//            holder.playerPic.setImageBitmap(
+//                    Saver.getLocalCache( " "+ oriList.get(sameStringSingleList.get(position)).getAlbum_Picture_Id()  ));
+
+        if ( oriList.get( sameStringSingleList.get(position)).getIsAlbumPicExist() ){
             holder.playerPic.setImageBitmap(
-                    Saver.getLocalCache( " "+ oriList.get(sameStringSingleList.get(position)).getAlbum_Picture_Id()  ));
+                    Saver.getLocalCache(
+                            " "+  oriList.get(sameStringSingleList.get(position) ).getAlbum_Picture_Id()  ));
+        }
+        else {
+            holder.playerPic.setImageResource(
+                    Player.fileFormatDetect(  oriList.get( sameStringSingleList.get(position) ).getPath()  )  );
+        }
+
 
         initSetOnClick(holder.dialog, position);
         return convertView;

@@ -70,6 +70,32 @@ public class Saver {
         }catch (Exception e){e.printStackTrace();}
 
     }
+
+    public static void exchangeSongList(String fileName, Object object ){
+        final String Local_Cache_Path =
+                MyApplication.getContext().getExternalFilesDir(null).toString() + "ceceSongList";
+        File dir = new File(Local_Cache_Path);
+        File singleFile = new File(Local_Cache_Path+"/"+fileName);
+        if (!dir.exists() || !dir.isDirectory())
+            dir.mkdirs();
+        if(singleFile.exists()){
+            try {
+                File objectFile = new File(dir, fileName);
+                ObjectOutputStream oos =new ObjectOutputStream(new FileOutputStream(objectFile,false));
+                oos.writeObject(object);
+                oos.close();//byte[] bytes = new Byte(songList);
+            } catch (Exception e){ e.printStackTrace(); }
+        }
+        else {
+            try {
+                File objectFile = new File(dir, fileName);
+                ObjectOutputStream oos =new ObjectOutputStream(new FileOutputStream(objectFile));
+                oos.writeObject(object);
+                oos.close();//byte[] bytes = new Byte(songList);
+            }catch (Exception e){ e.printStackTrace(); }
+        }
+    }
+
     public static Object readSongList(String songListFileName){
         final String Local_Cache_Path =
                 MyApplication.getContext().getExternalFilesDir(null).toString() + "ceceSongList";
